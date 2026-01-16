@@ -1,14 +1,14 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Video, Users, FolderOpen, Bell, Settings } from 'lucide-react';
+import { ArrowLeft, Video, Users, FolderOpen, Bell, Settings, Megaphone } from 'lucide-react';
 import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminUsers } from '@/components/admin/AdminUsers';
 import { AdminCategories } from '@/components/admin/AdminCategories';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { AdminSettings } from '@/components/admin/AdminSettings';
+import { AdminAdvertisements } from '@/components/admin/AdminAdvertisements';
 
 export default function AdminPage() {
   const { isAdmin, loading } = useAuth();
@@ -50,7 +50,7 @@ export default function AdminPage() {
 
       <div className="p-4">
         <Tabs defaultValue="videos" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 h-9">
+          <TabsList className="grid w-full grid-cols-6 h-9">
             <TabsTrigger value="videos" className="text-xs gap-1">
               <Video className="h-3 w-3" />
               <span className="hidden sm:inline">Video</span>
@@ -62,6 +62,10 @@ export default function AdminPage() {
             <TabsTrigger value="categories" className="text-xs gap-1">
               <FolderOpen className="h-3 w-3" />
               <span className="hidden sm:inline">Danh mục</span>
+            </TabsTrigger>
+            <TabsTrigger value="ads" className="text-xs gap-1">
+              <Megaphone className="h-3 w-3" />
+              <span className="hidden sm:inline">Quảng cáo</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="text-xs gap-1">
               <Bell className="h-3 w-3" />
@@ -83,6 +87,10 @@ export default function AdminPage() {
 
           <TabsContent value="categories">
             <AdminCategories />
+          </TabsContent>
+
+          <TabsContent value="ads">
+            <AdminAdvertisements />
           </TabsContent>
 
           <TabsContent value="notifications">
