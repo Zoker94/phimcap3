@@ -1,13 +1,44 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Layout } from '@/components/Layout';
+import { VideoGrid } from '@/components/VideoGrid';
+
+interface Video {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  duration: string | null;
+  views: number;
+  is_vip: boolean;
+}
 
 const Index = () => {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      const { data } = await supabase
+        .from('videos')
+        .select('id, title, thumbnail_url, duration, views, is_vip')
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        setVideos(data);
+      }
+      setLoading(false);
+    };
+
+    fetchVideos();
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <Layout>
+      <section>
+        <h2 className="text-base font-semibold mb-3">Video mới nhất</h2>
+        <VideoGrid videos={videos} loading={loading} />
+      </section>
+    </Layout>
   );
 };
 
