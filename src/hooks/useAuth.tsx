@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { User } from '@supabase/supabase-js';
 
 interface Profile {
@@ -32,6 +33,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const handleBannedUser = async () => {
+    toast.error('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin.');
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setIsAdmin(false);
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data: profileData } = await supabase
       .from('profiles')
@@ -40,6 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
     
     if (profileData) {
+      // Check if user is banned
+      if (profileData.is_banned) {
+        await handleBannedUser();
+        return;
+      }
       setProfile(profileData as Profile);
     }
 
@@ -84,8 +98,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Subscribe to profile changes to detect ban in real-time
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('profile-ban-check')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const updatedProfile = payload.new as Profile;
+          if (updatedProfile.is_banned) {
+            handleBannedUser();
+          } else {
+            setProfile(updatedProfile);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (!error && data.user) {
+      // Check if user is banned before allowing login
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('is_banned')
+        .eq('user_id', data.user.id)
+        .single();
+      
+      if (profileData?.is_banned) {
+        await supabase.auth.signOut();
+        return { error: new Error('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin.') };
+      }
+    }
+    
     return { error };
   };
 
