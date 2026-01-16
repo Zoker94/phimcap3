@@ -76,6 +76,39 @@ export default function VideoPage() {
 
   const canWatch = !video?.is_vip || (profile?.membership_status === 'vip');
 
+  const bunnyEmbedUrl = (() => {
+    if (!video?.video_url) return '';
+
+    // Bunny can be pasted as "play" URL; embed works best on mobile.
+    // Example:
+    // - https://iframe.mediadelivery.net/play/{libraryId}/{videoId}
+    // - https://iframe.mediadelivery.net/embed/{libraryId}/{videoId}
+    try {
+      const u = new URL(video.video_url);
+
+      // Convert /play/... -> /embed/...
+      if (u.hostname === 'iframe.mediadelivery.net') {
+        u.pathname = u.pathname.replace(/^\/play\//, '/embed/');
+      }
+
+      // Some users paste video.bunnycdn.com/play/...; map to iframe embed.
+      if (u.hostname === 'video.bunnycdn.com' && u.pathname.startsWith('/play/')) {
+        // /play/{libraryId}/{videoId}
+        u.hostname = 'iframe.mediadelivery.net';
+        u.pathname = u.pathname.replace(/^\/play\//, '/embed/');
+        u.protocol = 'https:';
+      }
+
+      // Ensure a stable mobile experience
+      if (!u.searchParams.has('autoplay')) u.searchParams.set('autoplay', 'false');
+
+      return u.toString();
+    } catch {
+      // Fallback: do a simple string replace if URL constructor fails
+      return video.video_url.replace('iframe.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
+    }
+  })();
+
   if (loading) {
     return (
       <Layout showCategories={false}>
@@ -117,7 +150,7 @@ export default function VideoPage() {
           {canWatch ? (
             video.video_type === 'bunny' ? (
               <iframe
-                src={video.video_url}
+                src={bunnyEmbedUrl || video.video_url}
                 className="w-full h-full border-0"
                 allowFullScreen
                 loading="lazy"
