@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, Moon, Sun, Menu, X, Crown, Shield, Play, Wallet } from 'lucide-react';
+import { Search, User, Moon, Sun, Menu, X, Crown, Shield, Play, Wallet, Settings, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from '@/lib/theme';
@@ -96,6 +96,10 @@ export function Header() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Quản lý tài khoản
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/deposit')} className="text-green-600">
                   <Wallet className="h-4 w-4 mr-2" />
                   Nạp tiền
@@ -144,18 +148,12 @@ export function Header() {
               Trang chủ
             </Link>
             <Link
-              to="/category/phim-hanh-dong"
-              className="px-3 py-1.5 text-xs bg-secondary rounded-full hover:bg-secondary/80"
+              to="/chat"
+              className="px-3 py-1.5 text-xs bg-gradient-to-r from-primary/10 to-accent/10 rounded-full hover:from-primary/20 hover:to-accent/20 flex items-center gap-1"
               onClick={() => setMenuOpen(false)}
             >
-              Hành động
-            </Link>
-            <Link
-              to="/category/phim-tinh-cam"
-              className="px-3 py-1.5 text-xs bg-secondary rounded-full hover:bg-secondary/80"
-              onClick={() => setMenuOpen(false)}
-            >
-              Tình cảm
+              <MessageCircle className="w-3 h-3" />
+              Trò chuyện
             </Link>
             <Link
               to="/category/clip-ngan"
