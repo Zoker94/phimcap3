@@ -332,10 +332,14 @@ export default function Chat() {
                   )}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className={cn(
-                        "text-xs flex items-center gap-1",
+                        "text-xs flex items-center gap-1 font-medium",
                         isOwnMessage(message.user_id) 
-                          ? "text-primary font-medium" 
-                          : getUsernameColorClass(message.user_id)
+                          ? "text-primary" 
+                          : msgIsAdmin
+                            ? "text-red-500"
+                            : msgIsVip
+                              ? "text-yellow-500"
+                              : "text-muted-foreground"
                       )}>
                         {msgIsAdmin && !isOwnMessage(message.user_id) && (
                           <Shield className="w-3 h-3 text-red-500" />
@@ -359,14 +363,21 @@ export default function Chat() {
                     <div className={cn(
                       "px-4 py-2.5 rounded-2xl shadow-sm",
                       isOwnMessage(message.user_id)
-                        ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-tr-sm"
-                        : msgIsAdmin
-                          ? "bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-500/30 rounded-tl-sm"
+                        ? msgIsAdmin
+                          ? "bg-gradient-to-r from-red-600 to-red-500 text-white rounded-tr-sm"
                           : msgIsVip
-                            ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-tl-sm"
+                            ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-tr-sm"
+                            : "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-tr-sm"
+                        : msgIsAdmin
+                          ? "bg-gradient-to-r from-red-600 to-red-500 text-white rounded-tl-sm"
+                          : msgIsVip
+                            ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-tl-sm"
                             : "bg-card border border-border rounded-tl-sm"
                     )}>
-                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                      <p className={cn(
+                        "text-sm whitespace-pre-wrap break-words leading-relaxed",
+                        (msgIsAdmin || msgIsVip) && "text-white"
+                      )}>
                         {message.content}
                       </p>
                     </div>
