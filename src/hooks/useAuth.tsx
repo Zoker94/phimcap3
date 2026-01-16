@@ -12,6 +12,7 @@ interface Profile {
   membership_status: 'free' | 'vip';
   is_banned: boolean;
   vip_expires_at: string | null;
+  date_of_birth: string | null;
 }
 
 interface AuthContextType {
