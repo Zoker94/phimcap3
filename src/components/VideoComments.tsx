@@ -39,20 +39,42 @@ export function VideoComments({ videoId }: VideoCommentsProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchComments = async () => {
-    const { data } = await supabase
+    // Fetch comments first
+    const { data: commentsData, error } = await supabase
       .from('comments')
-      .select(`
-        *,
-        profile:profiles!comments_user_id_fkey(username)
-      `)
+      .select('*')
       .eq('video_id', videoId)
       .order('created_at', { ascending: false });
 
-    if (data) {
-      setComments(data.map(c => ({
+    if (error) {
+      console.error('Error fetching comments:', error);
+      setLoading(false);
+      return;
+    }
+
+    if (commentsData && commentsData.length > 0) {
+      // Get unique user IDs
+      const userIds = [...new Set(commentsData.map(c => c.user_id))];
+      
+      // Fetch profiles for those users
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, username')
+        .in('user_id', userIds);
+
+      // Create a map of user_id to username
+      const profilesMap = new Map<string, string>();
+      profilesData?.forEach(p => {
+        profilesMap.set(p.user_id, p.username || 'Người dùng');
+      });
+
+      // Combine comments with profiles
+      setComments(commentsData.map(c => ({
         ...c,
-        profile: Array.isArray(c.profile) ? c.profile[0] : c.profile
+        profile: { username: profilesMap.get(c.user_id) || 'Người dùng' }
       })));
+    } else {
+      setComments([]);
     }
     setLoading(false);
   };
