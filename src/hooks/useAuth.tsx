@@ -10,6 +10,7 @@ interface Profile {
   balance: number;
   membership_status: 'free' | 'vip';
   is_banned: boolean;
+  vip_expires_at: string | null;
 }
 
 interface AuthContextType {
