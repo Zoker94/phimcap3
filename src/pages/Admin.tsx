@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Video, Users, FolderOpen } from 'lucide-react';
+import { ArrowLeft, Video, Users, FolderOpen, Bell } from 'lucide-react';
 import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminUsers } from '@/components/admin/AdminUsers';
 import { AdminCategories } from '@/components/admin/AdminCategories';
+import { AdminNotifications } from '@/components/admin/AdminNotifications';
 
 export default function AdminPage() {
   const { isAdmin, loading } = useAuth();
@@ -48,18 +49,22 @@ export default function AdminPage() {
 
       <div className="p-4">
         <Tabs defaultValue="videos" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 h-9">
+          <TabsList className="grid w-full grid-cols-4 h-9">
             <TabsTrigger value="videos" className="text-xs gap-1">
               <Video className="h-3 w-3" />
-              Video
+              <span className="hidden sm:inline">Video</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="text-xs gap-1">
               <Users className="h-3 w-3" />
-              Thành viên
+              <span className="hidden sm:inline">Thành viên</span>
             </TabsTrigger>
             <TabsTrigger value="categories" className="text-xs gap-1">
               <FolderOpen className="h-3 w-3" />
-              Danh mục
+              <span className="hidden sm:inline">Danh mục</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs gap-1">
+              <Bell className="h-3 w-3" />
+              <span className="hidden sm:inline">Thông báo</span>
             </TabsTrigger>
           </TabsList>
 
@@ -73,6 +78,10 @@ export default function AdminPage() {
 
           <TabsContent value="categories">
             <AdminCategories />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <AdminNotifications />
           </TabsContent>
         </Tabs>
       </div>

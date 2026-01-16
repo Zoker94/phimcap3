@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/lib/theme";
 import { AuthProvider } from "@/hooks/useAuth";
+import { LiveNotification } from "@/components/LiveNotification";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -24,6 +25,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <LiveNotification />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
