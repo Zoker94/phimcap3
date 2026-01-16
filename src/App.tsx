@@ -15,6 +15,7 @@ import Category from "./pages/Category";
 import Search from "./pages/Search";
 import Admin from "./pages/Admin";
 import VipPurchase from "./pages/VipPurchase";
+import Deposit from "./pages/Deposit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/search" element={<Search />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/vip" element={<VipPurchase />} />
+              <Route path="/deposit" element={<Deposit />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

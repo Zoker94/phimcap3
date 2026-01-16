@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, Moon, Sun, Menu, X, Crown, Shield, Play } from 'lucide-react';
+import { Search, User, Moon, Sun, Menu, X, Crown, Shield, Play, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from '@/lib/theme';
@@ -81,6 +81,9 @@ export function Header() {
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">
                   {profile?.username || user.email}
                 </div>
+                <div className="px-2 py-1 text-xs">
+                  Số dư: <span className="font-medium text-green-600">{(profile?.balance || 0).toLocaleString()}đ</span>
+                </div>
                 {profile?.membership_status === 'vip' && profile?.vip_expires_at && new Date(profile.vip_expires_at) > new Date() ? (
                   <div className="px-2 py-1 flex items-center gap-1 text-xs text-yellow-600">
                     <Crown className="h-3 w-3" />
@@ -92,6 +95,11 @@ export function Header() {
                     Mua VIP
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/deposit')} className="text-green-600">
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Nạp tiền
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isAdmin && (
                   <>
