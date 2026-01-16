@@ -118,9 +118,11 @@ export default function VideoPage() {
             video.video_type === 'bunny' ? (
               <iframe
                 src={video.video_url}
-                className="w-full h-full"
+                className="w-full h-full border-0"
                 allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                style={{ border: 'none' }}
               />
             ) : (
               <video
