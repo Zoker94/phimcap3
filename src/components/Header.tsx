@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, Moon, Sun, Menu, X, Crown, Shield } from 'lucide-react';
+import { Search, User, Moon, Sun, Menu, X, Crown, Shield, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from '@/lib/theme';
@@ -51,10 +51,10 @@ export function Header() {
       {/* Main Header */}
       <div className="flex items-center justify-between px-3 py-2">
         <Link to="/" className="flex items-center gap-1.5">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">V</span>
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm shadow-primary/20">
+            <Play className="h-3.5 w-3.5 text-primary-foreground fill-current" />
           </div>
-          <span className="font-bold text-base">VidHub</span>
+          <span className="font-bold text-base tracking-tight">phimcap3</span>
         </Link>
 
         <div className="flex items-center gap-1">
