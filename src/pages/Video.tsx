@@ -104,9 +104,10 @@ export default function VideoPage() {
       // Ensure a stable mobile experience
       if (!u.searchParams.has('autoplay')) u.searchParams.set('autoplay', 'false');
 
-      // Limit max resolution for non-VIP users to 720p
+      // Non‑VIP: cap stream to 720p and hide quality selector so they can't pick 1080p
       if (!isVip) {
         u.searchParams.set('maxResolution', '720');
+        u.searchParams.set('showQualitySelector', 'false');
       }
 
       return u.toString();
@@ -114,7 +115,8 @@ export default function VideoPage() {
       // Fallback: do a simple string replace if URL constructor fails
       let url = video.video_url.replace('iframe.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
       if (!isVip) {
-        url += (url.includes('?') ? '&' : '?') + 'maxResolution=720';
+        const extra = 'maxResolution=720&showQualitySelector=false';
+        url += (url.includes('?') ? '&' : '?') + extra;
       }
       return url;
     }
