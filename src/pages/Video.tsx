@@ -104,9 +104,9 @@ export default function VideoPage() {
       // Ensure a stable mobile experience
       if (!u.searchParams.has('autoplay')) u.searchParams.set('autoplay', 'false');
 
-      // Limit quality for non-VIP users to 720p
+      // Limit max resolution for non-VIP users to 720p
       if (!isVip) {
-        u.searchParams.set('quality', '720');
+        u.searchParams.set('maxResolution', '720');
       }
 
       return u.toString();
@@ -114,7 +114,7 @@ export default function VideoPage() {
       // Fallback: do a simple string replace if URL constructor fails
       let url = video.video_url.replace('iframe.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
       if (!isVip) {
-        url += (url.includes('?') ? '&' : '?') + 'quality=720';
+        url += (url.includes('?') ? '&' : '?') + 'maxResolution=720';
       }
       return url;
     }
