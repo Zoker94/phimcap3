@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { MessageCircle, Sparkles } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -21,7 +22,8 @@ export function CategoryTabs() {
         .order('name');
       
       if (data) {
-        setCategories(data);
+        // Filter out the chat category as it has its own special button
+        setCategories(data.filter(cat => cat.slug !== 'chat'));
       }
     };
 
@@ -33,6 +35,7 @@ export function CategoryTabs() {
   };
 
   const isHome = location.pathname === '/';
+  const isChat = location.pathname === '/chat';
 
   return (
     <div className="overflow-x-auto scrollbar-hide border-b border-border">
@@ -48,6 +51,7 @@ export function CategoryTabs() {
         >
           Tất cả
         </Link>
+        
         {categories.map((cat) => (
           <Link
             key={cat.id}
@@ -62,6 +66,21 @@ export function CategoryTabs() {
             {cat.name}
           </Link>
         ))}
+
+        {/* Special Chat Tab */}
+        <Link
+          to="/chat"
+          className={cn(
+            "px-3 py-1.5 text-xs rounded-full transition-colors whitespace-nowrap flex items-center gap-1.5",
+            isChat
+              ? "bg-gradient-to-r from-primary to-accent text-primary-foreground"
+              : "bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 text-primary border border-primary/20"
+          )}
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          Trò chuyện
+          <Sparkles className="w-3 h-3 text-yellow-400" />
+        </Link>
       </div>
     </div>
   );
