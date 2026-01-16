@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,20 +22,23 @@ import { cn } from '@/lib/utils';
 
 export default function Profile() {
   const { user, profile, isAdmin, loading, refreshProfile } = useAuth();
-  const [username, setUsername] = useState(profile?.username || '');
+  const [username, setUsername] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form values when profile loads
-  useState(() => {
-    if (profile) {
+  useEffect(() => {
+    if (profile && !initialized) {
       setUsername(profile.username || '');
       setAvatarUrl(profile.avatar_url || '');
+      setDateOfBirth(profile.date_of_birth || '');
+      setInitialized(true);
     }
-  });
+  }, [profile, initialized]);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
