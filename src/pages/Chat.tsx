@@ -12,10 +12,9 @@ import {
   MessageCircle, 
   Users, 
   Smile,
-  Heart,
-  ThumbsUp,
   Sparkles,
-  Crown
+  Crown,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,19 +25,76 @@ interface ChatMessage {
   avatar_url: string | null;
   content: string;
   created_at: string;
+  is_vip?: boolean;
+  is_admin?: boolean;
+}
+
+interface UserInfo {
+  user_id: string;
+  membership_status: string | null;
+  vip_expires_at: string | null;
+  is_admin: boolean;
 }
 
 const quickEmojis = ['😀', '😂', '😍', '🥰', '😘', '🔥', '❤️', '👍', '👏', '🎉'];
 
 export default function Chat() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, isAdmin, loading } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [onlineCount, setOnlineCount] = useState(1);
   const [showEmojis, setShowEmojis] = useState(false);
+  const [userInfoMap, setUserInfoMap] = useState<Map<string, UserInfo>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch user info for VIP/Admin status
+  const fetchUserInfo = async (userIds: string[]) => {
+    if (userIds.length === 0) return;
+
+    // Get profiles
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, membership_status, vip_expires_at')
+      .in('user_id', userIds);
+
+    // Get admin roles
+    const { data: adminRoles } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .in('user_id', userIds)
+      .eq('role', 'admin');
+
+    const adminSet = new Set(adminRoles?.map(r => r.user_id) || []);
+
+    const newMap = new Map(userInfoMap);
+    profiles?.forEach(p => {
+      newMap.set(p.user_id, {
+        user_id: p.user_id,
+        membership_status: p.membership_status,
+        vip_expires_at: p.vip_expires_at,
+        is_admin: adminSet.has(p.user_id)
+      });
+    });
+
+    setUserInfoMap(newMap);
+  };
+
+  // Check if user is VIP
+  const isVipUser = (userId: string): boolean => {
+    const info = userInfoMap.get(userId);
+    if (!info) return false;
+    return info.membership_status === 'vip' && 
+           info.vip_expires_at !== null && 
+           new Date(info.vip_expires_at) > new Date();
+  };
+
+  // Check if user is Admin
+  const isAdminUser = (userId: string): boolean => {
+    const info = userInfoMap.get(userId);
+    return info?.is_admin || false;
+  };
 
   // Fetch initial messages
   useEffect(() => {
@@ -51,6 +107,9 @@ export default function Chat() {
       
       if (data) {
         setMessages(data);
+        // Fetch user info for all message authors
+        const userIds = [...new Set(data.map(m => m.user_id))];
+        fetchUserInfo(userIds);
       }
     };
 
@@ -68,8 +127,13 @@ export default function Chat() {
           schema: 'public',
           table: 'chat_messages'
         },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as ChatMessage]);
+        async (payload) => {
+          const newMsg = payload.new as ChatMessage;
+          setMessages((prev) => [...prev, newMsg]);
+          // Fetch user info if not already cached
+          if (!userInfoMap.has(newMsg.user_id)) {
+            fetchUserInfo([newMsg.user_id]);
+          }
         }
       )
       .on(
@@ -88,7 +152,7 @@ export default function Chat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [userInfoMap]);
 
   // Presence for online users count
   useEffect(() => {
@@ -163,6 +227,13 @@ export default function Chat() {
 
   const isOwnMessage = (messageUserId: string) => user?.id === messageUserId;
 
+  // Get username color class
+  const getUsernameColorClass = (userId: string): string => {
+    if (isAdminUser(userId)) return "text-red-500 font-bold";
+    if (isVipUser(userId)) return "text-yellow-500 font-semibold";
+    return "text-muted-foreground";
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -221,50 +292,88 @@ export default function Chat() {
               <p className="text-sm">Hãy bắt đầu cuộc trò chuyện!</p>
             </div>
           ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex gap-3",
-                  isOwnMessage(message.user_id) && "flex-row-reverse"
-                )}
-              >
-                <Avatar className="w-9 h-9 shrink-0 ring-2 ring-border">
-                  <AvatarImage src={message.avatar_url || ''} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xs">
-                    {message.username?.charAt(0)?.toUpperCase() || '?'}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className={cn(
-                  "flex flex-col max-w-[75%]",
-                  isOwnMessage(message.user_id) && "items-end"
-                )}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={cn(
-                      "text-xs font-medium",
-                      isOwnMessage(message.user_id) ? "text-primary" : "text-muted-foreground"
+            messages.map((message) => {
+              const msgIsAdmin = isAdminUser(message.user_id);
+              const msgIsVip = isVipUser(message.user_id);
+
+              return (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "flex gap-3",
+                    isOwnMessage(message.user_id) && "flex-row-reverse"
+                  )}
+                >
+                  <div className="relative">
+                    <Avatar className={cn(
+                      "w-9 h-9 shrink-0 ring-2",
+                      msgIsAdmin ? "ring-red-500" : msgIsVip ? "ring-yellow-500" : "ring-border"
                     )}>
-                      {isOwnMessage(message.user_id) ? 'Bạn' : message.username}
-                    </span>
-                    <span className="text-xs text-muted-foreground/60">
-                      {formatTime(message.created_at)}
-                    </span>
+                      <AvatarImage src={message.avatar_url || ''} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xs">
+                        {message.username?.charAt(0)?.toUpperCase() || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {msgIsAdmin && (
+                      <div className="absolute -bottom-1 -right-1 bg-red-500 rounded-full p-0.5">
+                        <Shield className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                    {msgIsVip && !msgIsAdmin && (
+                      <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5">
+                        <Crown className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
                   </div>
                   
                   <div className={cn(
-                    "px-4 py-2.5 rounded-2xl shadow-sm",
-                    isOwnMessage(message.user_id)
-                      ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-tr-sm"
-                      : "bg-card border border-border rounded-tl-sm"
+                    "flex flex-col max-w-[75%]",
+                    isOwnMessage(message.user_id) && "items-end"
                   )}>
-                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                      {message.content}
-                    </p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn(
+                        "text-xs flex items-center gap-1",
+                        isOwnMessage(message.user_id) 
+                          ? "text-primary font-medium" 
+                          : getUsernameColorClass(message.user_id)
+                      )}>
+                        {msgIsAdmin && !isOwnMessage(message.user_id) && (
+                          <Shield className="w-3 h-3 text-red-500" />
+                        )}
+                        {msgIsVip && !msgIsAdmin && !isOwnMessage(message.user_id) && (
+                          <Crown className="w-3 h-3 text-yellow-500" />
+                        )}
+                        {isOwnMessage(message.user_id) ? 'Bạn' : message.username}
+                        {msgIsAdmin && !isOwnMessage(message.user_id) && (
+                          <span className="text-[10px] bg-red-500/20 text-red-500 px-1 rounded">Admin</span>
+                        )}
+                        {msgIsVip && !msgIsAdmin && !isOwnMessage(message.user_id) && (
+                          <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-1 rounded">VIP</span>
+                        )}
+                      </span>
+                      <span className="text-xs text-muted-foreground/60">
+                        {formatTime(message.created_at)}
+                      </span>
+                    </div>
+                    
+                    <div className={cn(
+                      "px-4 py-2.5 rounded-2xl shadow-sm",
+                      isOwnMessage(message.user_id)
+                        ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-tr-sm"
+                        : msgIsAdmin
+                          ? "bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-500/30 rounded-tl-sm"
+                          : msgIsVip
+                            ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-tl-sm"
+                            : "bg-card border border-border rounded-tl-sm"
+                    )}>
+                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                        {message.content}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </ScrollArea>

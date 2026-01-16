@@ -170,6 +170,7 @@ export type Database = {
           avatar_url: string | null
           balance: number | null
           created_at: string | null
+          date_of_birth: string | null
           id: string
           is_banned: boolean | null
           membership_status:
@@ -184,6 +185,7 @@ export type Database = {
           avatar_url?: string | null
           balance?: number | null
           created_at?: string | null
+          date_of_birth?: string | null
           id?: string
           is_banned?: boolean | null
           membership_status?:
@@ -198,6 +200,7 @@ export type Database = {
           avatar_url?: string | null
           balance?: number | null
           created_at?: string | null
+          date_of_birth?: string | null
           id?: string
           is_banned?: boolean | null
           membership_status?:
