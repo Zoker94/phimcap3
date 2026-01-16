@@ -82,15 +82,10 @@ export default function VideoPage() {
   const isVip = profile?.membership_status === 'vip' && 
     profile?.vip_expires_at && 
     new Date(profile.vip_expires_at) > new Date();
-  const canWatch = !video?.is_vip || isVip;
 
   const bunnyEmbedUrl = (() => {
     if (!video?.video_url) return '';
 
-    // Bunny can be pasted as "play" URL; embed works best on mobile.
-    // Example:
-    // - https://iframe.mediadelivery.net/play/{libraryId}/{videoId}
-    // - https://iframe.mediadelivery.net/embed/{libraryId}/{videoId}
     try {
       const u = new URL(video.video_url);
 
@@ -101,7 +96,6 @@ export default function VideoPage() {
 
       // Some users paste video.bunnycdn.com/play/...; map to iframe embed.
       if (u.hostname === 'video.bunnycdn.com' && u.pathname.startsWith('/play/')) {
-        // /play/{libraryId}/{videoId}
         u.hostname = 'iframe.mediadelivery.net';
         u.pathname = u.pathname.replace(/^\/play\//, '/embed/');
         u.protocol = 'https:';
@@ -110,10 +104,19 @@ export default function VideoPage() {
       // Ensure a stable mobile experience
       if (!u.searchParams.has('autoplay')) u.searchParams.set('autoplay', 'false');
 
+      // Limit quality for non-VIP users to 720p
+      if (!isVip) {
+        u.searchParams.set('quality', '720');
+      }
+
       return u.toString();
     } catch {
       // Fallback: do a simple string replace if URL constructor fails
-      return video.video_url.replace('iframe.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
+      let url = video.video_url.replace('iframe.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
+      if (!isVip) {
+        url += (url.includes('?') ? '&' : '?') + 'quality=720';
+      }
+      return url;
     }
   })();
 
@@ -155,41 +158,31 @@ export default function VideoPage() {
       <div className="space-y-4">
         {/* Video Player */}
         <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
-          {canWatch ? (
-            video.video_type === 'bunny' ? (
-              <iframe
-                src={bunnyEmbedUrl || video.video_url}
-                className="w-full h-full border-0"
-                allowFullScreen
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                style={{ border: 'none' }}
-              />
-            ) : (
-              <video
-                src={video.video_url}
-                className="w-full h-full"
-                controls
-                poster={video.thumbnail_url || undefined}
-              />
-            )
+          {video.video_type === 'bunny' ? (
+            <iframe
+              src={bunnyEmbedUrl || video.video_url}
+              className="w-full h-full border-0"
+              allowFullScreen
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              style={{ border: 'none' }}
+            />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white">
-              <Lock className="h-12 w-12 mb-3 text-yellow-500" />
-              <p className="text-sm font-medium mb-1">Nội dung VIP</p>
-              <p className="text-xs text-gray-400 mb-4">Nâng cấp VIP để xem video chất lượng 1080p</p>
-              {user ? (
-                <Link to="/vip">
-                  <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700">
-                    <Crown className="h-4 w-4 mr-2" />
-                    Mua VIP ngay
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/login">
-                  <Button size="sm">Đăng nhập</Button>
-                </Link>
-              )}
+            <video
+              src={video.video_url}
+              className="w-full h-full"
+              controls
+              poster={video.thumbnail_url || undefined}
+            />
+          )}
+          
+          {/* Quality indicator for non-VIP users */}
+          {!isVip && (
+            <div className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded flex items-center gap-1">
+              <span>720p</span>
+              <Link to={user ? "/vip" : "/login"} className="text-yellow-400 hover:underline ml-1">
+                Nâng cấp VIP để xem 1080p
+              </Link>
             </div>
           )}
         </div>
