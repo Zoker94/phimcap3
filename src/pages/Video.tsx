@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { VideoGrid } from '@/components/VideoGrid';
+import { VideoComments } from '@/components/VideoComments';
 import { Button } from '@/components/ui/button';
 import { Crown, Eye, Calendar, ArrowLeft, Lock } from 'lucide-react';
 
@@ -172,6 +173,9 @@ export default function VideoPage() {
             </p>
           )}
         </div>
+
+        {/* Comments Section */}
+        <VideoComments videoId={video.id} />
 
         {/* Related Videos */}
         {relatedVideos.length > 0 && (
