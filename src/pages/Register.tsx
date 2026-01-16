@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Play } from 'lucide-react';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -48,8 +48,8 @@ export default function Register() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-primary mx-auto mb-2 flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xl">V</span>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 mx-auto mb-2 flex items-center justify-center shadow-lg shadow-primary/20">
+            <Play className="h-6 w-6 text-primary-foreground fill-current" />
           </div>
           <CardTitle className="text-xl">Đăng ký</CardTitle>
           <CardDescription className="text-sm">Tạo tài khoản mới để xem video</CardDescription>
