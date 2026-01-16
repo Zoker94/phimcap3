@@ -14,6 +14,7 @@ import Video from "./pages/Video";
 import Category from "./pages/Category";
 import Search from "./pages/Search";
 import Admin from "./pages/Admin";
+import VipPurchase from "./pages/VipPurchase";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/category/:slug" element={<Category />} />
               <Route path="/search" element={<Search />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/vip" element={<VipPurchase />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

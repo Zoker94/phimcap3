@@ -72,7 +72,7 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2">
                   <User className="h-4 w-4" />
-                  {profile?.membership_status === 'vip' && (
+                  {profile?.membership_status === 'vip' && profile?.vip_expires_at && new Date(profile.vip_expires_at) > new Date() && (
                     <Crown className="h-3 w-3 text-yellow-500" />
                   )}
                 </Button>
@@ -81,11 +81,16 @@ export function Header() {
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">
                   {profile?.username || user.email}
                 </div>
-                {profile?.membership_status === 'vip' && (
+                {profile?.membership_status === 'vip' && profile?.vip_expires_at && new Date(profile.vip_expires_at) > new Date() ? (
                   <div className="px-2 py-1 flex items-center gap-1 text-xs text-yellow-600">
                     <Crown className="h-3 w-3" />
                     VIP Member
                   </div>
+                ) : (
+                  <DropdownMenuItem onClick={() => navigate('/vip')} className="text-yellow-600">
+                    <Crown className="h-4 w-4 mr-2" />
+                    Mua VIP
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 {isAdmin && (

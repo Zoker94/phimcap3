@@ -22,6 +22,11 @@ interface Video {
   category_id: string | null;
 }
 
+interface Profile {
+  membership_status: 'free' | 'vip';
+  vip_expires_at: string | null;
+}
+
 interface RelatedVideo {
   id: string;
   title: string;
@@ -74,7 +79,10 @@ export default function VideoPage() {
     fetchVideo();
   }, [id]);
 
-  const canWatch = !video?.is_vip || (profile?.membership_status === 'vip');
+  const isVip = profile?.membership_status === 'vip' && 
+    profile?.vip_expires_at && 
+    new Date(profile.vip_expires_at) > new Date();
+  const canWatch = !video?.is_vip || isVip;
 
   const bunnyEmbedUrl = (() => {
     if (!video?.video_url) return '';
@@ -169,8 +177,15 @@ export default function VideoPage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white">
               <Lock className="h-12 w-12 mb-3 text-yellow-500" />
               <p className="text-sm font-medium mb-1">Nội dung VIP</p>
-              <p className="text-xs text-gray-400 mb-4">Nâng cấp VIP để xem video này</p>
-              {!user && (
+              <p className="text-xs text-gray-400 mb-4">Nâng cấp VIP để xem video chất lượng 1080p</p>
+              {user ? (
+                <Link to="/vip">
+                  <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700">
+                    <Crown className="h-4 w-4 mr-2" />
+                    Mua VIP ngay
+                  </Button>
+                </Link>
+              ) : (
                 <Link to="/login">
                   <Button size="sm">Đăng nhập</Button>
                 </Link>
