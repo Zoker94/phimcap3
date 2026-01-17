@@ -6,7 +6,8 @@ import { Layout } from '@/components/Layout';
 import { VideoGrid } from '@/components/VideoGrid';
 import { VideoComments } from '@/components/VideoComments';
 import { Button } from '@/components/ui/button';
-import { Crown, Eye, Calendar, ArrowLeft, Lock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Crown, Eye, Calendar, ArrowLeft, Tag } from 'lucide-react';
 
 interface Video {
   id: string;
@@ -36,11 +37,18 @@ interface RelatedVideo {
   is_vip: boolean;
 }
 
+interface TagItem {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export default function VideoPage() {
   const { id } = useParams<{ id: string }>();
   const { user, profile } = useAuth();
   const [video, setVideo] = useState<Video | null>(null);
   const [relatedVideos, setRelatedVideos] = useState<RelatedVideo[]>([]);
+  const [videoTags, setVideoTags] = useState<TagItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,6 +69,17 @@ export default function VideoPage() {
           .from('videos')
           .update({ views: (data.views || 0) + 1 })
           .eq('id', id);
+
+        // Fetch video tags
+        const { data: tagsData } = await supabase
+          .from('video_tags')
+          .select('tag_id, tags(id, name, slug)')
+          .eq('video_id', id);
+        
+        if (tagsData) {
+          const tags = tagsData.map((vt: any) => vt.tags).filter(Boolean);
+          setVideoTags(tags);
+        }
 
         // Fetch related videos
         const { data: related } = await supabase
@@ -216,6 +235,20 @@ export default function VideoPage() {
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
               {video.description}
             </p>
+          )}
+
+          {/* Video Tags */}
+          {videoTags.length > 0 && (
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              <Tag className="h-3 w-3 text-muted-foreground" />
+              {videoTags.map((tag) => (
+                <Link key={tag.id} to={`/search?tag=${tag.slug}`}>
+                  <Badge variant="secondary" className="text-[10px] cursor-pointer hover:bg-primary/20">
+                    {tag.name}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
 
