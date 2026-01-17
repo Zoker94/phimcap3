@@ -358,6 +358,8 @@ export type Database = {
           description: string | null
           duration: string | null
           id: string
+          is_uncensored: boolean | null
+          is_vietsub: boolean | null
           is_vip: boolean | null
           thumbnail_url: string | null
           title: string
@@ -372,6 +374,8 @@ export type Database = {
           description?: string | null
           duration?: string | null
           id?: string
+          is_uncensored?: boolean | null
+          is_vietsub?: boolean | null
           is_vip?: boolean | null
           thumbnail_url?: string | null
           title: string
@@ -386,6 +390,8 @@ export type Database = {
           description?: string | null
           duration?: string | null
           id?: string
+          is_uncensored?: boolean | null
+          is_vietsub?: boolean | null
           is_vip?: boolean | null
           thumbnail_url?: string | null
           title?: string

@@ -7,6 +7,8 @@ interface Video {
   duration: string | null;
   views: number;
   is_vip: boolean;
+  is_vietsub?: boolean;
+  is_uncensored?: boolean;
 }
 
 interface VideoGridProps {

@@ -21,6 +21,8 @@ interface Video {
   video_type: string;
   category_id: string | null;
   is_vip: boolean;
+  is_vietsub: boolean;
+  is_uncensored: boolean;
   views: number;
   duration: string | null;
 }
@@ -53,6 +55,8 @@ export function AdminVideos() {
   const [videoType, setVideoType] = useState('bunny');
   const [categoryId, setCategoryId] = useState('');
   const [isVip, setIsVip] = useState(false);
+  const [isVietsub, setIsVietsub] = useState(false);
+  const [isUncensored, setIsUncensored] = useState(false);
   const [duration, setDuration] = useState('');
   const [selectedTags, setSelectedTags] = useState<TagItem[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -83,6 +87,8 @@ export function AdminVideos() {
     setVideoType('bunny');
     setCategoryId('');
     setIsVip(false);
+    setIsVietsub(false);
+    setIsUncensored(false);
     setDuration('');
     setSelectedTags([]);
     setTagInput('');
@@ -110,6 +116,8 @@ export function AdminVideos() {
     setVideoType(video.video_type || 'bunny');
     setCategoryId(video.category_id || '');
     setIsVip(video.is_vip || false);
+    setIsVietsub(video.is_vietsub || false);
+    setIsUncensored(video.is_uncensored || false);
     setDuration(video.duration || '');
     setDialogOpen(true);
     await fetchVideoTags(video.id);
@@ -189,6 +197,8 @@ export function AdminVideos() {
       video_type: videoType,
       category_id: categoryId || null,
       is_vip: isVip,
+      is_vietsub: isVietsub,
+      is_uncensored: isUncensored,
       duration: duration || null,
     };
 
@@ -409,6 +419,14 @@ export function AdminVideos() {
               <div className="flex items-center justify-between">
                 <Label className="text-xs">Video VIP</Label>
                 <Switch checked={isVip} onCheckedChange={setIsVip} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Vietsub</Label>
+                <Switch checked={isVietsub} onCheckedChange={setIsVietsub} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Không che</Label>
+                <Switch checked={isUncensored} onCheckedChange={setIsUncensored} />
               </div>
               <Button type="submit" className="w-full h-8 text-sm" disabled={submitting}>
                 {submitting ? 'Đang xử lý...' : (editingVideo ? 'Cập nhật' : 'Thêm video')}

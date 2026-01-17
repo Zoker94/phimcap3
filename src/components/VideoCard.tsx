@@ -8,9 +8,11 @@ interface VideoCardProps {
   duration: string | null;
   views: number;
   is_vip: boolean;
+  is_vietsub?: boolean;
+  is_uncensored?: boolean;
 }
 
-export function VideoCard({ id, title, thumbnail_url, duration, views, is_vip }: VideoCardProps) {
+export function VideoCard({ id, title, thumbnail_url, duration, views, is_vip, is_vietsub, is_uncensored }: VideoCardProps) {
   return (
     <Link to={`/video/${id}`} className="group block">
       <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
@@ -33,19 +35,33 @@ export function VideoCard({ id, title, thumbnail_url, duration, views, is_vip }:
           </div>
         </div>
 
+        {/* Top left badges - Vietsub & Uncensored */}
+        <div className="absolute top-1 left-1 flex flex-col gap-0.5">
+          {is_vietsub && (
+            <div className="bg-orange-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+              Vietsub
+            </div>
+          )}
+          {is_uncensored && (
+            <div className="bg-pink-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+              Không che
+            </div>
+          )}
+        </div>
+
+        {/* VIP badge - top right */}
+        {is_vip && (
+          <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5">
+            <Crown className="h-2.5 w-2.5" />
+            VIP
+          </div>
+        )}
+
         {/* Duration badge */}
         {duration && (
           <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5">
             <Clock className="h-2.5 w-2.5" />
             {duration}
-          </div>
-        )}
-
-        {/* VIP badge */}
-        {is_vip && (
-          <div className="absolute top-1 left-1 bg-yellow-500 text-black text-[10px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5">
-            <Crown className="h-2.5 w-2.5" />
-            VIP
           </div>
         )}
       </div>
