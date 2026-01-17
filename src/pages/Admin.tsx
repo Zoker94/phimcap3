@@ -2,13 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Video, Users, FolderOpen, Bell, Settings, Megaphone } from 'lucide-react';
+import { ArrowLeft, Video, Users, FolderOpen, Bell, Settings, Megaphone, Tag } from 'lucide-react';
 import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminUsers } from '@/components/admin/AdminUsers';
 import { AdminCategories } from '@/components/admin/AdminCategories';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { AdminSettings } from '@/components/admin/AdminSettings';
 import { AdminAdvertisements } from '@/components/admin/AdminAdvertisements';
+import { AdminTags } from '@/components/admin/AdminTags';
 
 export default function AdminPage() {
   const { isAdmin, loading } = useAuth();
@@ -50,10 +51,14 @@ export default function AdminPage() {
 
       <div className="p-4">
         <Tabs defaultValue="videos" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6 h-9">
+          <TabsList className="grid w-full grid-cols-7 h-9">
             <TabsTrigger value="videos" className="text-xs gap-1">
               <Video className="h-3 w-3" />
               <span className="hidden sm:inline">Video</span>
+            </TabsTrigger>
+            <TabsTrigger value="tags" className="text-xs gap-1">
+              <Tag className="h-3 w-3" />
+              <span className="hidden sm:inline">Tags</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="text-xs gap-1">
               <Users className="h-3 w-3" />
@@ -79,6 +84,10 @@ export default function AdminPage() {
 
           <TabsContent value="videos">
             <AdminVideos />
+          </TabsContent>
+
+          <TabsContent value="tags">
+            <AdminTags />
           </TabsContent>
 
           <TabsContent value="users">
