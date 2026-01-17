@@ -92,13 +92,13 @@ export function LiveNotification() {
   const getIcon = (type: string) => {
     switch (type) {
       case 'warning':
-        return <AlertTriangle className="h-4 w-4" />;
+        return <AlertTriangle className="h-6 w-6" />;
       case 'success':
-        return <CheckCircle className="h-4 w-4" />;
+        return <CheckCircle className="h-6 w-6" />;
       case 'vip':
-        return <Crown className="h-4 w-4" />;
+        return <Crown className="h-6 w-6" />;
       default:
-        return <Info className="h-4 w-4" />;
+        return <Info className="h-6 w-6" />;
     }
   };
 
@@ -116,32 +116,34 @@ export function LiveNotification() {
   };
 
   return (
-    <div className="fixed top-16 left-0 right-0 z-40 px-3 space-y-2 pointer-events-none">
-      {visibleNotifications.map((notification) => (
-        <div
-          key={notification.id}
-          className={cn(
-            'pointer-events-auto mx-auto max-w-md rounded-lg border px-4 py-3 shadow-lg backdrop-blur-sm animate-in slide-in-from-top-2 duration-300',
-            getStyles(notification.type)
-          )}
-        >
-          <div className="flex items-start gap-3">
-            <div className="shrink-0 mt-0.5">
-              {getIcon(notification.type)}
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 pointer-events-none">
+      <div className="space-y-3 w-full max-w-lg">
+        {visibleNotifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={cn(
+              'pointer-events-auto rounded-xl border-2 px-6 py-5 shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-300',
+              getStyles(notification.type)
+            )}
+          >
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 mt-1">
+                {getIcon(notification.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-xl">{notification.title}</p>
+                <p className="text-base opacity-90 mt-2 leading-relaxed">{notification.message}</p>
+              </div>
+              <button
+                onClick={() => dismissNotification(notification.id)}
+                className="shrink-0 p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">{notification.title}</p>
-              <p className="text-xs opacity-80 mt-0.5 line-clamp-2">{notification.message}</p>
-            </div>
-            <button
-              onClick={() => dismissNotification(notification.id)}
-              className="shrink-0 p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
