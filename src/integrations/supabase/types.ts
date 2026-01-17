@@ -207,6 +207,7 @@ export type Database = {
           balance: number | null
           created_at: string | null
           date_of_birth: string | null
+          display_id: number
           id: string
           is_banned: boolean | null
           membership_status:
@@ -222,6 +223,7 @@ export type Database = {
           balance?: number | null
           created_at?: string | null
           date_of_birth?: string | null
+          display_id?: number
           id?: string
           is_banned?: boolean | null
           membership_status?:
@@ -237,6 +239,7 @@ export type Database = {
           balance?: number | null
           created_at?: string | null
           date_of_birth?: string | null
+          display_id?: number
           id?: string
           is_banned?: boolean | null
           membership_status?:
