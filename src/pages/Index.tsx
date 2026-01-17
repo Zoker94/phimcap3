@@ -10,6 +10,8 @@ interface Video {
   duration: string | null;
   views: number;
   is_vip: boolean;
+  is_vietsub: boolean;
+  is_uncensored: boolean;
 }
 
 const Index = () => {
@@ -20,7 +22,7 @@ const Index = () => {
     const fetchVideos = async () => {
       const { data } = await supabase
         .from('videos')
-        .select('id, title, thumbnail_url, duration, views, is_vip')
+        .select('id, title, thumbnail_url, duration, views, is_vip, is_vietsub, is_uncensored')
         .order('created_at', { ascending: false });
       
       if (data) {
