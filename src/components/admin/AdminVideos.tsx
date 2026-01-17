@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Edit, ExternalLink, X, Tag } from 'lucide-react';
 
 interface Video {
   id: string;
@@ -30,9 +31,16 @@ interface Category {
   slug: string;
 }
 
+interface TagItem {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export function AdminVideos() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allTags, setAllTags] = useState<TagItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
@@ -46,16 +54,20 @@ export function AdminVideos() {
   const [categoryId, setCategoryId] = useState('');
   const [isVip, setIsVip] = useState(false);
   const [duration, setDuration] = useState('');
+  const [selectedTags, setSelectedTags] = useState<TagItem[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
-    const [videosRes, catsRes] = await Promise.all([
+    const [videosRes, catsRes, tagsRes] = await Promise.all([
       supabase.from('videos').select('*').order('created_at', { ascending: false }),
-      supabase.from('categories').select('*')
+      supabase.from('categories').select('*'),
+      supabase.from('tags').select('*').order('name')
     ]);
     
     if (videosRes.data) setVideos(videosRes.data);
     if (catsRes.data) setCategories(catsRes.data);
+    if (tagsRes.data) setAllTags(tagsRes.data);
     setLoading(false);
   };
 
@@ -72,10 +84,24 @@ export function AdminVideos() {
     setCategoryId('');
     setIsVip(false);
     setDuration('');
+    setSelectedTags([]);
+    setTagInput('');
     setEditingVideo(null);
   };
 
-  const openEditDialog = (video: Video) => {
+  const fetchVideoTags = async (videoId: string) => {
+    const { data } = await supabase
+      .from('video_tags')
+      .select('tag_id, tags(id, name, slug)')
+      .eq('video_id', videoId);
+    
+    if (data) {
+      const tags = data.map((vt: any) => vt.tags).filter(Boolean);
+      setSelectedTags(tags);
+    }
+  };
+
+  const openEditDialog = async (video: Video) => {
     setEditingVideo(video);
     setTitle(video.title);
     setDescription(video.description || '');
@@ -86,7 +112,70 @@ export function AdminVideos() {
     setIsVip(video.is_vip || false);
     setDuration(video.duration || '');
     setDialogOpen(true);
+    await fetchVideoTags(video.id);
   };
+
+  const createSlug = (text: string) => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  };
+
+  const addTag = async () => {
+    const tagName = tagInput.trim();
+    if (!tagName) return;
+
+    // Check if tag already selected
+    if (selectedTags.find(t => t.name.toLowerCase() === tagName.toLowerCase())) {
+      setTagInput('');
+      return;
+    }
+
+    // Check if tag exists in database
+    let existingTag = allTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+    
+    if (!existingTag) {
+      // Create new tag
+      const slug = createSlug(tagName);
+      const { data, error } = await supabase
+        .from('tags')
+        .insert({ name: tagName, slug })
+        .select()
+        .single();
+      
+      if (error) {
+        toast.error('Lỗi tạo tag');
+        return;
+      }
+      existingTag = data;
+      setAllTags([...allTags, data]);
+    }
+
+    setSelectedTags([...selectedTags, existingTag]);
+    setTagInput('');
+  };
+
+  const removeTag = (tagId: string) => {
+    setSelectedTags(selectedTags.filter(t => t.id !== tagId));
+  };
+
+  const selectExistingTag = (tag: TagItem) => {
+    if (!selectedTags.find(t => t.id === tag.id)) {
+      setSelectedTags([...selectedTags, tag]);
+    }
+    setTagInput('');
+  };
+
+  const filteredTags = allTags.filter(t => 
+    t.name.toLowerCase().includes(tagInput.toLowerCase()) &&
+    !selectedTags.find(st => st.id === t.id)
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +192,8 @@ export function AdminVideos() {
       duration: duration || null,
     };
 
+    let videoId: string;
+
     if (editingVideo) {
       const { error } = await supabase
         .from('videos')
@@ -111,24 +202,42 @@ export function AdminVideos() {
       
       if (error) {
         toast.error('Lỗi cập nhật video');
-      } else {
-        toast.success('Đã cập nhật video');
-        setDialogOpen(false);
-        resetForm();
-        fetchData();
+        setSubmitting(false);
+        return;
       }
+      videoId = editingVideo.id;
+
+      // Delete existing video_tags
+      await supabase.from('video_tags').delete().eq('video_id', videoId);
     } else {
-      const { error } = await supabase.from('videos').insert(videoData);
+      const { data, error } = await supabase
+        .from('videos')
+        .insert(videoData)
+        .select()
+        .single();
       
-      if (error) {
+      if (error || !data) {
         toast.error('Lỗi thêm video');
-      } else {
-        toast.success('Đã thêm video');
-        setDialogOpen(false);
-        resetForm();
-        fetchData();
+        setSubmitting(false);
+        return;
       }
+      videoId = data.id;
     }
+
+    // Insert video_tags
+    if (selectedTags.length > 0) {
+      const videoTagsData = selectedTags.map(tag => ({
+        video_id: videoId,
+        tag_id: tag.id
+      }));
+      
+      await supabase.from('video_tags').insert(videoTagsData);
+    }
+
+    toast.success(editingVideo ? 'Đã cập nhật video' : 'Đã thêm video');
+    setDialogOpen(false);
+    resetForm();
+    fetchData();
     setSubmitting(false);
   };
 
@@ -230,6 +339,64 @@ export function AdminVideos() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Tags Section */}
+              <div className="space-y-2">
+                <Label className="text-xs flex items-center gap-1">
+                  <Tag className="h-3 w-3" />
+                  Từ khóa (Tags SEO)
+                </Label>
+                
+                {/* Selected Tags */}
+                {selectedTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {selectedTags.map((tag) => (
+                      <Badge key={tag.id} variant="secondary" className="text-[10px] h-5 gap-1">
+                        {tag.name}
+                        <button type="button" onClick={() => removeTag(tag.id)}>
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tag Input */}
+                <div className="relative">
+                  <Input
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
+                    placeholder="Nhập từ khóa và Enter"
+                    className="h-8 text-sm"
+                  />
+                  
+                  {/* Suggestions */}
+                  {tagInput && filteredTags.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-popover border rounded-md shadow-lg z-10 max-h-32 overflow-y-auto mt-1">
+                      {filteredTags.slice(0, 5).map((tag) => (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() => selectExistingTag(tag)}
+                          className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent"
+                        >
+                          {tag.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Nhập từ khóa liên quan để tối ưu SEO, phân cách bằng Enter
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label className="text-xs">Thời lượng</Label>
                 <Input
