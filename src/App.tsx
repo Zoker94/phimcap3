@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/lib/theme";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LiveNotification } from "@/components/LiveNotification";
+import { TelegramButton } from "@/components/TelegramButton";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -30,6 +31,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <LiveNotification />
+          <TelegramButton />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Wallet, Copy, Check, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import paymentQR from '@/assets/payment-qr.jpg';
+import defaultPaymentQR from '@/assets/payment-qr.jpg';
 
 export default function Deposit() {
   const { user, profile } = useAuth();
@@ -15,6 +15,7 @@ export default function Deposit() {
   const [loading, setLoading] = useState(true);
   const [isEnabled, setIsEnabled] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [paymentQR, setPaymentQR] = useState<string>(defaultPaymentQR);
 
   const bankInfo = {
     name: 'NGUYEN QUOC DUNG',
@@ -26,11 +27,18 @@ export default function Deposit() {
     const checkDepositStatus = async () => {
       const { data } = await supabase
         .from('site_settings')
-        .select('value')
-        .eq('key', 'deposit_enabled')
-        .maybeSingle();
+        .select('key, value')
+        .in('key', ['deposit_enabled', 'payment_qr_url']);
       
-      setIsEnabled(data?.value === 'true');
+      if (data) {
+        const depositEnabled = data.find(s => s.key === 'deposit_enabled');
+        setIsEnabled(depositEnabled?.value === 'true');
+        
+        const qrUrl = data.find(s => s.key === 'payment_qr_url');
+        if (qrUrl?.value) {
+          setPaymentQR(qrUrl.value);
+        }
+      }
       setLoading(false);
     };
 
