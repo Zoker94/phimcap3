@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/lib/theme";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LiveNotification } from "@/components/LiveNotification";
 import { TelegramButton } from "@/components/TelegramButton";
+import { PopupAdvertisement } from "@/components/PopupAdvertisement";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -32,6 +33,7 @@ const App = () => (
           <Sonner />
           <LiveNotification />
           <TelegramButton />
+          <PopupAdvertisement />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />

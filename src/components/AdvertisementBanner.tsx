@@ -129,5 +129,6 @@ export function AdvertisementBanner({ position, className = '', maxItems }: Adve
     );
   }
 
+  // popup is handled by PopupAdvertisement component
   return null;
 }

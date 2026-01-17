@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { VideoGrid } from '@/components/VideoGrid';
 import { VideoComments } from '@/components/VideoComments';
+import { AdvertisementBanner } from '@/components/AdvertisementBanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Crown, Eye, Calendar, ArrowLeft, Tag } from 'lucide-react';
@@ -177,6 +178,9 @@ export default function VideoPage() {
       </Link>
 
       <div className="space-y-4">
+        {/* Advertisement Banner - Video Page */}
+        <AdvertisementBanner position="video-page" className="mb-2" />
+
         {/* Video Player */}
         <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
           {video.video_type === 'bunny' ? (
