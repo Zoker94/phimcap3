@@ -9,47 +9,80 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import defaultPaymentQR from '@/assets/payment-qr.jpg';
 
+interface BankInfo {
+  name: string;
+  account: string;
+  bank: string;
+}
+
 export default function Deposit() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [isEnabled, setIsEnabled] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [paymentQR, setPaymentQR] = useState<string>(defaultPaymentQR);
-
-  const bankInfo = {
+  const [displayId, setDisplayId] = useState<number | null>(null);
+  const [bankInfo, setBankInfo] = useState<BankInfo>({
     name: 'NGUYEN QUOC DUNG',
     account: '9191919191994',
     bank: 'VietinBank'
-  };
+  });
 
   useEffect(() => {
-    const checkDepositStatus = async () => {
-      const { data } = await supabase
+    const fetchData = async () => {
+      // Fetch site settings
+      const { data: settingsData } = await supabase
         .from('site_settings')
         .select('key, value')
-        .in('key', ['deposit_enabled', 'payment_qr_url']);
+        .in('key', ['deposit_enabled', 'payment_qr_url', 'bank_name', 'bank_account', 'bank_holder']);
       
-      if (data) {
-        const depositEnabled = data.find(s => s.key === 'deposit_enabled');
+      if (settingsData) {
+        const depositEnabled = settingsData.find(s => s.key === 'deposit_enabled');
         setIsEnabled(depositEnabled?.value === 'true');
         
-        const qrUrl = data.find(s => s.key === 'payment_qr_url');
+        const qrUrl = settingsData.find(s => s.key === 'payment_qr_url');
         if (qrUrl?.value) {
           setPaymentQR(qrUrl.value);
         }
+
+        const bankName = settingsData.find(s => s.key === 'bank_name')?.value;
+        const bankAccount = settingsData.find(s => s.key === 'bank_account')?.value;
+        const bankHolder = settingsData.find(s => s.key === 'bank_holder')?.value;
+        
+        if (bankName || bankAccount || bankHolder) {
+          setBankInfo({
+            bank: bankName || 'VietinBank',
+            account: bankAccount || '9191919191994',
+            name: bankHolder || 'NGUYEN QUOC DUNG'
+          });
+        }
       }
+
+      // Fetch user's display_id if logged in
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('display_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (profileData?.display_id) {
+          setDisplayId(profileData.display_id);
+        }
+      }
+
       setLoading(false);
     };
 
-    checkDepositStatus();
-  }, []);
+    fetchData();
+  }, [user]);
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
-    setCopied(true);
+    setCopiedField(field);
     toast.success('Đã sao chép!');
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopiedField(null), 2000);
   };
 
   if (loading) {
@@ -137,10 +170,10 @@ export default function Deposit() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => copyToClipboard(bankInfo.account)}
+                  onClick={() => copyToClipboard(bankInfo.account, 'account')}
                   className="h-8 w-8 p-0"
                 >
-                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  {copiedField === 'account' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
 
@@ -150,14 +183,31 @@ export default function Deposit() {
                   <p className="font-medium text-sm">{bankInfo.bank}</p>
                 </div>
               </div>
+
+              {/* Transfer Content with User ID */}
+              <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/30 rounded-lg">
+                <div>
+                  <p className="text-xs text-muted-foreground">Nội dung chuyển khoản</p>
+                  <p className="font-bold text-sm text-primary">
+                    {user && displayId ? displayId : 'Đăng nhập để xem ID'}
+                  </p>
+                </div>
+                {user && displayId && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => copyToClipboard(displayId.toString(), 'transfer')}
+                    className="h-8 w-8 p-0"
+                  >
+                    {copiedField === 'transfer' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mt-4">
               <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                <strong>Lưu ý:</strong> Nội dung chuyển khoản ghi: <br />
-                <code className="bg-yellow-500/20 px-1 rounded">
-                  {user ? profile?.username || user.email : 'Email đăng ký'}
-                </code>
+                <strong>Lưu ý:</strong> Vui lòng ghi chính xác nội dung chuyển khoản là ID của bạn để hệ thống tự động cộng tiền.
               </p>
             </div>
 

@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Wallet, Settings, Send, QrCode, Upload, Loader2 } from 'lucide-react';
+import { Wallet, Settings, Send, QrCode, Upload, Loader2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Setting {
@@ -19,6 +19,9 @@ export function AdminSettings() {
   const [telegramLink, setTelegramLink] = useState('');
   const [uploadingQR, setUploadingQR] = useState(false);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
+  const [bankName, setBankName] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [bankHolder, setBankHolder] = useState('');
 
   useEffect(() => {
     fetchSettings();
@@ -37,6 +40,11 @@ export function AdminSettings() {
       setTelegramLink(tgLink);
       const qrUrl = data?.find(s => s.key === 'payment_qr_url')?.value || '';
       if (qrUrl) setQrPreview(qrUrl);
+      
+      // Bank info
+      setBankName(data?.find(s => s.key === 'bank_name')?.value || '');
+      setBankAccount(data?.find(s => s.key === 'bank_account')?.value || '');
+      setBankHolder(data?.find(s => s.key === 'bank_holder')?.value || '');
     }
     setLoading(false);
   };
@@ -86,6 +94,14 @@ export function AdminSettings() {
 
   const handleTelegramSave = async () => {
     await updateSetting('telegram_link', telegramLink);
+  };
+
+  const handleBankInfoSave = async () => {
+    await Promise.all([
+      updateSetting('bank_name', bankName),
+      updateSetting('bank_account', bankAccount),
+      updateSetting('bank_holder', bankHolder)
+    ]);
   };
 
   const handleQRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,6 +210,50 @@ export function AdminSettings() {
               />
               <Button onClick={handleTelegramSave} size="sm">
                 Lưu
+              </Button>
+            </div>
+          </div>
+
+          {/* Bank Info Settings */}
+          <div className="p-3 bg-secondary/50 rounded-lg space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 rounded-lg">
+                <CreditCard className="h-4 w-4 text-emerald-500" />
+              </div>
+              <div>
+                <Label className="font-medium text-sm">Thông tin ngân hàng</Label>
+                <p className="text-xs text-muted-foreground">
+                  Thông tin tài khoản nhận tiền hiển thị ở trang nạp tiền
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Tên ngân hàng</Label>
+                <Input
+                  placeholder="VietinBank"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Số tài khoản</Label>
+                <Input
+                  placeholder="9191919191994"
+                  value={bankAccount}
+                  onChange={(e) => setBankAccount(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Chủ tài khoản</Label>
+                <Input
+                  placeholder="NGUYEN QUOC DUNG"
+                  value={bankHolder}
+                  onChange={(e) => setBankHolder(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleBankInfoSave} size="sm" className="w-full mt-2">
+                Lưu thông tin ngân hàng
               </Button>
             </div>
           </div>
