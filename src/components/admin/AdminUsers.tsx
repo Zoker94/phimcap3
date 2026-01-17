@@ -18,6 +18,7 @@ interface Profile {
   membership_status: 'free' | 'vip';
   is_banned: boolean;
   created_at: string;
+  display_id: number;
 }
 
 export function AdminUsers() {
@@ -49,7 +50,8 @@ export function AdminUsers() {
 
   const filteredUsers = users.filter(u => 
     u.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.user_id.includes(searchQuery)
+    u.user_id.includes(searchQuery) ||
+    u.display_id.toString().includes(searchQuery)
   );
 
   const toggleBan = async (user: Profile) => {
@@ -149,6 +151,7 @@ export function AdminUsers() {
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground shrink-0">#{user.display_id}</span>
                     <p className="text-xs font-medium truncate">{user.username || 'No name'}</p>
                     {user.membership_status === 'vip' && (
                       <Badge variant="secondary" className="h-4 text-[10px] bg-yellow-500/20 text-yellow-600">
