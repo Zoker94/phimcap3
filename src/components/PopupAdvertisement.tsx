@@ -35,16 +35,11 @@ export function PopupAdvertisement() {
 
   useEffect(() => {
     if (advertisements && advertisements.length > 0) {
-      // Check if popup was shown in this session
-      const popupShown = sessionStorage.getItem('popup_ad_shown');
-      if (!popupShown) {
-        // Show popup after 2 seconds delay
-        const timer = setTimeout(() => {
-          setIsOpen(true);
-          sessionStorage.setItem('popup_ad_shown', 'true');
-        }, 2000);
-        return () => clearTimeout(timer);
-      }
+      // Show popup after 2 seconds delay every time
+      const timer = setTimeout(() => {
+        setIsOpen(true);
+      }, 2000);
+      return () => clearTimeout(timer);
     }
   }, [advertisements]);
 
