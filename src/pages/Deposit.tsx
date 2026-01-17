@@ -189,14 +189,14 @@ export default function Deposit() {
                 <div>
                   <p className="text-xs text-muted-foreground">Nội dung chuyển khoản</p>
                   <p className="font-bold text-sm text-primary">
-                    {user && displayId ? displayId : 'Đăng nhập để xem ID'}
+                    {user && displayId ? `NAP-${displayId}` : 'Đăng nhập để xem'}
                   </p>
                 </div>
                 {user && displayId && (
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => copyToClipboard(displayId.toString(), 'transfer')}
+                    onClick={() => copyToClipboard(`NAP-${displayId}`, 'transfer')}
                     className="h-8 w-8 p-0"
                   >
                     {copiedField === 'transfer' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
@@ -207,7 +207,7 @@ export default function Deposit() {
 
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mt-4">
               <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                <strong>Lưu ý:</strong> Vui lòng ghi chính xác nội dung chuyển khoản là ID của bạn để hệ thống tự động cộng tiền.
+                <strong>Lưu ý:</strong> Vui lòng ghi chính xác nội dung chuyển khoản là <strong>NAP-ID</strong> của bạn để hệ thống tự động cộng tiền.
               </p>
             </div>
 
