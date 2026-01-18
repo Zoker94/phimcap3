@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string | null;
     const categoryId = formData.get('category_id') as string | null;
+    const visibility = formData.get('visibility') as string || 'public';
 
     if (!videoFile || !title) {
       return new Response(
@@ -164,6 +165,7 @@ Deno.serve(async (req) => {
         category_id: categoryId || null,
         uploaded_by: user.id,
         status: 'pending',
+        visibility: visibility === 'private' ? 'private' : 'public',
         video_type: 'bunny',
         is_vip: false,
         is_vietsub: false,

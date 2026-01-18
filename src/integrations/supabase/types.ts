@@ -369,6 +369,7 @@ export type Database = {
           video_type: string | null
           video_url: string
           views: number | null
+          visibility: string | null
         }
         Insert: {
           category_id?: string | null
@@ -387,6 +388,7 @@ export type Database = {
           video_type?: string | null
           video_url: string
           views?: number | null
+          visibility?: string | null
         }
         Update: {
           category_id?: string | null
@@ -405,6 +407,7 @@ export type Database = {
           video_type?: string | null
           video_url?: string
           views?: number | null
+          visibility?: string | null
         }
         Relationships: [
           {
