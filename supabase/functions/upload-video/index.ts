@@ -86,13 +86,19 @@ Deno.serve(async (req) => {
     }
 
     // Bunny.net credentials
-    const bunnyApiKey = Deno.env.get('BUNNY_API_KEY');
-    const bunnyStorageZone = Deno.env.get('BUNNY_STORAGE_ZONE');
+    const bunnyApiKeyRaw = Deno.env.get('BUNNY_API_KEY');
+    const bunnyStorageZoneRaw = Deno.env.get('BUNNY_STORAGE_ZONE');
+
+    const bunnyApiKey = bunnyApiKeyRaw?.trim();
+    const bunnyStorageZone = bunnyStorageZoneRaw?.trim();
 
     if (!bunnyApiKey || !bunnyStorageZone) {
-      console.error('Missing Bunny.net credentials');
+      console.error('Missing Bunny.net credentials', {
+        hasApiKey: Boolean(bunnyApiKeyRaw),
+        hasStorageZone: Boolean(bunnyStorageZoneRaw),
+      });
       return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
+        JSON.stringify({ error: 'Server configuration error (missing storage credentials)' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -104,13 +110,14 @@ Deno.serve(async (req) => {
     const videoFileName = `${timestamp}_${sanitizedTitle}.${videoExtension}`;
 
     // Upload video to Bunny.net
-    console.log(`Uploading video: ${videoFileName}`);
+    console.log(`Uploading video: ${videoFileName} (zone: ${bunnyStorageZone})`);
     const videoBuffer = await videoFile.arrayBuffer();
-    
+
     const bunnyUploadUrl = `https://storage.bunnycdn.com/${bunnyStorageZone}/videos/${videoFileName}`;
     const bunnyResponse = await fetch(bunnyUploadUrl, {
       method: 'PUT',
       headers: {
+        // Bunny Storage API expects the Storage Zone "Password" here
         'AccessKey': bunnyApiKey,
         'Content-Type': 'application/octet-stream',
       },
@@ -121,7 +128,12 @@ Deno.serve(async (req) => {
       const errorText = await bunnyResponse.text();
       console.error('Bunny upload error:', errorText);
       return new Response(
-        JSON.stringify({ error: 'Failed to upload video to storage' }),
+        JSON.stringify({
+          error: 'Failed to upload video to storage',
+          provider: 'bunny',
+          status: bunnyResponse.status,
+          details: errorText,
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
