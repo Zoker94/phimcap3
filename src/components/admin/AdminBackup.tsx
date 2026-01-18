@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Database, Loader2, Github, ExternalLink } from 'lucide-react';
+import { Download, Database, Loader2, Github } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function AdminBackup() {
@@ -180,44 +180,18 @@ COMMIT;
             <CardTitle className="text-base">Backup Mã Nguồn (Code)</CardTitle>
           </div>
           <CardDescription className="text-xs">
-            Kết nối GitHub để sao lưu và quản lý mã nguồn
+            Tải xuống toàn bộ mã nguồn website dưới dạng ZIP
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 bg-secondary/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Hướng dẫn kết nối GitHub:</h4>
-              <ol className="text-xs text-muted-foreground space-y-2 list-decimal list-inside">
-                <li>Nhấn nút <strong>"GitHub"</strong> ở góc trên bên trái của Lovable Editor</li>
-                <li>Chọn <strong>"Connect to GitHub"</strong> và đăng nhập</li>
-                <li>Chọn tài khoản/tổ chức GitHub của bạn</li>
-                <li>Nhấn <strong>"Create Repository"</strong> để tạo repo mới</li>
-              </ol>
-            </div>
-
-            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <h4 className="text-sm font-medium text-green-600 mb-2">✓ Lợi ích khi kết nối GitHub:</h4>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Tự động đồng bộ code lên GitHub mỗi khi thay đổi</li>
-                <li>• Download toàn bộ mã nguồn dưới dạng ZIP</li>
-                <li>• Quản lý phiên bản code với Git</li>
-                <li>• Có thể tự host website ở nơi khác</li>
-              </ul>
-            </div>
-            
-            <Button 
-              variant="outline"
-              className="w-full"
-              onClick={() => window.open('https://docs.lovable.dev/integrations/git-github', '_blank')}
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Xem hướng dẫn chi tiết
-            </Button>
-
-            <p className="text-[10px] text-muted-foreground text-center">
-              Sau khi kết nối, code sẽ tự động được backup lên GitHub. Bạn có thể download ZIP từ GitHub bất cứ lúc nào.
-            </p>
-          </div>
+          <Button 
+            variant="outline"
+            className="w-full"
+            onClick={() => window.open('https://github.com/Zoker94/phimcap3/archive/refs/heads/main.zip', '_blank')}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Tải Backup Mã Nguồn (ZIP)
+          </Button>
         </CardContent>
       </Card>
     </div>
