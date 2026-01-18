@@ -22,8 +22,9 @@ const Index = () => {
     const fetchVideos = async () => {
       const { data } = await supabase
         .from('videos')
-        .select('id, title, thumbnail_url, duration, views, is_vip, is_vietsub, is_uncensored')
+        .select('id, title, thumbnail_url, duration, views, is_vip, is_vietsub, is_uncensored, visibility')
         .eq('status', 'approved')
+        .eq('visibility', 'public')
         .order('created_at', { ascending: false });
       
       if (data) {
