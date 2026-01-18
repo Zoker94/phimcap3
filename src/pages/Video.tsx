@@ -103,6 +103,27 @@ export default function VideoPage() {
     profile?.vip_expires_at && 
     new Date(profile.vip_expires_at) > new Date();
 
+  // Check if this is a Bunny Stream embed URL or a storage URL
+  const isBunnyStream = video?.video_url?.includes('iframe.mediadelivery.net') || 
+                        video?.video_url?.includes('video.bunnycdn.com');
+  
+  // For Bunny Storage URLs (*.b-cdn.net), convert to direct storage access
+  const getStorageUrl = (url: string) => {
+    try {
+      const u = new URL(url);
+      // If using Pull Zone CDN that's not configured, try direct storage access
+      if (u.hostname.endsWith('.b-cdn.net')) {
+        // Extract storage zone from hostname (e.g., zoker941 from zoker941.b-cdn.net)
+        const storageZone = u.hostname.split('.')[0];
+        // Use Singapore storage endpoint for direct access
+        return `https://sg.storage.bunnycdn.com/${storageZone}${u.pathname}`;
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  };
+
   const bunnyEmbedUrl = (() => {
     if (!video?.video_url) return '';
 
@@ -141,6 +162,9 @@ export default function VideoPage() {
       return url;
     }
   })();
+  
+  // Final video URL - use storage URL for non-stream videos
+  const finalVideoUrl = isBunnyStream ? bunnyEmbedUrl : video?.video_url || '';
 
   if (loading) {
     return (
@@ -183,9 +207,9 @@ export default function VideoPage() {
 
         {/* Video Player */}
         <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
-          {video.video_type === 'bunny' ? (
+          {isBunnyStream ? (
             <iframe
-              src={bunnyEmbedUrl || video.video_url}
+              src={bunnyEmbedUrl}
               className="w-full h-full border-0"
               allowFullScreen
               loading="lazy"
@@ -194,7 +218,7 @@ export default function VideoPage() {
             />
           ) : (
             <video
-              src={video.video_url}
+              src={finalVideoUrl}
               className="w-full h-full"
               controls
               poster={video.thumbnail_url || undefined}
