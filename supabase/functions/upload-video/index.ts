@@ -166,8 +166,9 @@ Deno.serve(async (req) => {
 
     console.log(`Video storage upload succeeded using host: ${uploadAttempt.host}`);
 
-    // Video URL on Bunny CDN
-    const videoUrl = `https://${bunnyStorageZone}.b-cdn.net/videos/${videoFileName}`;
+    // Video URL on Bunny CDN - use the Pull Zone hostname (zoker941-cdn.b-cdn.net)
+    const pullZoneHostname = `${bunnyStorageZone}-cdn.b-cdn.net`;
+    const videoUrl = `https://${pullZoneHostname}/videos/${videoFileName}`;
     let thumbnailUrl = null;
 
     // Upload thumbnail if provided
@@ -194,7 +195,7 @@ Deno.serve(async (req) => {
         for (const host of ['storage.bunnycdn.com', 'sg.storage.bunnycdn.com']) {
           const attempt = await tryThumbUpload(host);
           if (attempt.res.ok) {
-            thumbnailUrl = `https://${bunnyStorageZone}.b-cdn.net/thumbnails/${thumbnailFileName}`;
+            thumbnailUrl = `https://${pullZoneHostname}/thumbnails/${thumbnailFileName}`;
             console.log(`Thumbnail upload succeeded using host: ${host}`);
             break;
           }
