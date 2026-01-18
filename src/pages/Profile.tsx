@@ -16,7 +16,10 @@ import {
   Crown,
   Calendar,
   Shield,
-  Sparkles
+  Sparkles,
+  KeyRound,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +32,13 @@ export default function Profile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Password change states
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Initialize form values when profile loads
   useEffect(() => {
@@ -133,6 +143,45 @@ export default function Profile() {
       toast.error('Có lỗi xảy ra khi cập nhật');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmNewPassword) {
+      toast.error('Vui lòng nhập mật khẩu mới');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error('Mật khẩu mới không khớp');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Mật khẩu phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ 
+        password: newPassword 
+      });
+
+      if (error) {
+        toast.error('Không thể đổi mật khẩu', { description: error.message });
+      } else {
+        toast.success('Đã đổi mật khẩu thành công');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast.error('Có lỗi xảy ra khi đổi mật khẩu');
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -298,6 +347,74 @@ export default function Profile() {
                   <>
                     <Save className="w-4 h-4 mr-2" />
                     Lưu thay đổi
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Change Password */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <KeyRound className="w-5 h-5" />
+              Đổi mật khẩu
+            </CardTitle>
+            <CardDescription>Cập nhật mật khẩu đăng nhập của bạn</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Mật khẩu mới</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showPasswords ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-10"
+                  minLength={6}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full w-10 p-0"
+                  onClick={() => setShowPasswords(!showPasswords)}
+                >
+                  {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmNewPassword">Xác nhận mật khẩu mới</Label>
+              <Input
+                id="confirmNewPassword"
+                type={showPasswords ? 'text' : 'password'}
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div className="pt-2">
+              <Button 
+                onClick={handleChangePassword} 
+                disabled={changingPassword || !newPassword || !confirmNewPassword}
+                variant="secondary"
+                className="w-full"
+              >
+                {changingPassword ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                    Đang đổi mật khẩu...
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4 mr-2" />
+                    Đổi mật khẩu
                   </>
                 )}
               </Button>
