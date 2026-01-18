@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Video, Users, FolderOpen, Bell, Settings, Megaphone, Tag } from 'lucide-react';
+import { ArrowLeft, Video, Users, FolderOpen, Bell, Settings, Megaphone, Tag, Database } from 'lucide-react';
 import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminUsers } from '@/components/admin/AdminUsers';
 import { AdminCategories } from '@/components/admin/AdminCategories';
@@ -10,6 +10,7 @@ import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { AdminSettings } from '@/components/admin/AdminSettings';
 import { AdminAdvertisements } from '@/components/admin/AdminAdvertisements';
 import { AdminTags } from '@/components/admin/AdminTags';
+import { AdminBackup } from '@/components/admin/AdminBackup';
 
 export default function AdminPage() {
   const { isAdmin, loading } = useAuth();
@@ -51,7 +52,7 @@ export default function AdminPage() {
 
       <div className="p-4">
         <Tabs defaultValue="videos" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-7 h-9">
+          <TabsList className="grid w-full grid-cols-8 h-9">
             <TabsTrigger value="videos" className="text-xs gap-1">
               <Video className="h-3 w-3" />
               <span className="hidden sm:inline">Video</span>
@@ -75,6 +76,10 @@ export default function AdminPage() {
             <TabsTrigger value="notifications" className="text-xs gap-1">
               <Bell className="h-3 w-3" />
               <span className="hidden sm:inline">Thông báo</span>
+            </TabsTrigger>
+            <TabsTrigger value="backup" className="text-xs gap-1">
+              <Database className="h-3 w-3" />
+              <span className="hidden sm:inline">Backup</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1">
               <Settings className="h-3 w-3" />
@@ -104,6 +109,10 @@ export default function AdminPage() {
 
           <TabsContent value="notifications">
             <AdminNotifications />
+          </TabsContent>
+
+          <TabsContent value="backup">
+            <AdminBackup />
           </TabsContent>
 
           <TabsContent value="settings">

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit, ExternalLink, X, Tag, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit, ExternalLink, X, Tag, CheckCircle, XCircle, Clock, Filter, Eye, EyeOff } from 'lucide-react';
 
 interface Video {
   id: string;
@@ -27,6 +27,7 @@ interface Video {
   duration: string | null;
   status?: string;
   uploaded_by?: string;
+  visibility?: string;
 }
 
 interface Category {
@@ -280,6 +281,21 @@ export function AdminVideos() {
     }
   };
 
+  const toggleVideoVisibility = async (video: Video) => {
+    const newVisibility = video.visibility === 'public' ? 'hidden' : 'public';
+    const { error } = await supabase
+      .from('videos')
+      .update({ visibility: newVisibility })
+      .eq('id', video.id);
+    
+    if (error) {
+      toast.error('Lỗi cập nhật trạng thái hiển thị');
+    } else {
+      toast.success(newVisibility === 'public' ? 'Đã hiển thị video' : 'Đã ẩn video');
+      fetchData();
+    }
+  };
+
   const pendingCount = videos.filter(v => v.status === 'pending').length;
   
   const filteredVideos = statusFilter === 'all' 
@@ -511,6 +527,11 @@ export function AdminVideos() {
                   <h3 className="text-xs font-medium line-clamp-1">{video.title}</h3>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     {getStatusBadge(video.status)}
+                    {video.visibility === 'hidden' && (
+                      <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
+                        <EyeOff className="h-2.5 w-2.5 mr-1" />Đã ẩn
+                      </Badge>
+                    )}
                     <span className="text-[10px] text-muted-foreground">
                       {video.views} views • {video.is_vip ? 'VIP' : 'Free'}
                     </span>
@@ -538,6 +559,17 @@ export function AdminVideos() {
                         <XCircle className="h-3.5 w-3.5" />
                       </Button>
                     </>
+                  )}
+                  {video.status === 'approved' && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={`h-7 w-7 p-0 ${video.visibility === 'hidden' ? 'text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10' : 'text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => toggleVideoVisibility(video)}
+                      title={video.visibility === 'hidden' ? 'Hiển thị video' : 'Ẩn video'}
+                    >
+                      {video.visibility === 'hidden' ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
                   )}
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditDialog(video)}>
                     <Edit className="h-3 w-3" />
