@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit, ExternalLink, X, Tag } from 'lucide-react';
+import { Plus, Trash2, Edit, ExternalLink, X, Tag, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
 
 interface Video {
   id: string;
@@ -25,6 +25,8 @@ interface Video {
   is_uncensored: boolean;
   views: number;
   duration: string | null;
+  status?: string;
+  uploaded_by?: string;
 }
 
 interface Category {
@@ -45,6 +47,7 @@ export function AdminVideos() {
   const [allTags, setAllTags] = useState<TagItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   
   // Form state
@@ -263,26 +266,79 @@ export function AdminVideos() {
     }
   };
 
+  const updateVideoStatus = async (id: string, status: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('videos')
+      .update({ status })
+      .eq('id', id);
+    
+    if (error) {
+      toast.error('Lỗi cập nhật trạng thái');
+    } else {
+      toast.success(status === 'approved' ? 'Đã duyệt video' : 'Đã từ chối video');
+      fetchData();
+    }
+  };
+
+  const pendingCount = videos.filter(v => v.status === 'pending').length;
+  
+  const filteredVideos = statusFilter === 'all' 
+    ? videos 
+    : videos.filter(v => v.status === statusFilter);
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge variant="default" className="text-[10px] bg-green-500/20 text-green-500 border-green-500/30"><CheckCircle className="h-2.5 w-2.5 mr-1" />Đã duyệt</Badge>;
+      case 'pending':
+        return <Badge variant="secondary" className="text-[10px] bg-yellow-500/20 text-yellow-500 border-yellow-500/30"><Clock className="h-2.5 w-2.5 mr-1" />Chờ duyệt</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive" className="text-[10px] bg-red-500/20 text-red-500 border-red-500/30"><XCircle className="h-2.5 w-2.5 mr-1" />Từ chối</Badge>;
+      default:
+        return <Badge variant="default" className="text-[10px]">Đã duyệt</Badge>;
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-sm text-muted-foreground">Đang tải...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{videos.length} video</p>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="h-8 text-xs">
-              <Plus className="h-3 w-3 mr-1" />
-              Thêm video
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-base">
-                {editingVideo ? 'Sửa video' : 'Thêm video mới'}
-              </DialogTitle>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">{filteredVideos.length} video</p>
+          {pendingCount > 0 && (
+            <Badge variant="secondary" className="text-[10px] bg-yellow-500/20 text-yellow-500">
+              {pendingCount} chờ duyệt
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-8 w-[130px] text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="pending">Chờ duyệt</SelectItem>
+              <SelectItem value="approved">Đã duyệt</SelectItem>
+              <SelectItem value="rejected">Từ chối</SelectItem>
+            </SelectContent>
+          </Select>
+          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="h-8 text-xs">
+                <Plus className="h-3 w-3 mr-1" />
+                Thêm video
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-base">
+                  {editingVideo ? 'Sửa video' : 'Thêm video mới'}
+                </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -434,10 +490,11 @@ export function AdminVideos() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="space-y-2">
-        {videos.map((video) => (
+        {filteredVideos.map((video) => (
           <Card key={video.id} className="overflow-hidden">
             <CardContent className="p-3">
               <div className="flex gap-3">
@@ -452,11 +509,36 @@ export function AdminVideos() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xs font-medium line-clamp-1">{video.title}</h3>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {video.views} lượt xem • {video.is_vip ? 'VIP' : 'Free'}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    {getStatusBadge(video.status)}
+                    <span className="text-[10px] text-muted-foreground">
+                      {video.views} views • {video.is_vip ? 'VIP' : 'Free'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex gap-1 shrink-0">
+                <div className="flex gap-1 shrink-0 items-start">
+                  {video.status === 'pending' && (
+                    <>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 w-7 p-0 text-green-500 hover:text-green-600 hover:bg-green-500/10" 
+                        onClick={() => updateVideoStatus(video.id, 'approved')}
+                        title="Duyệt video"
+                      >
+                        <CheckCircle className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-500/10" 
+                        onClick={() => updateVideoStatus(video.id, 'rejected')}
+                        title="Từ chối video"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  )}
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditDialog(video)}>
                     <Edit className="h-3 w-3" />
                   </Button>

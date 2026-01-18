@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, User, Moon, Sun, Menu, X, Crown, Shield, Play, Wallet, Settings, MessageCircle } from 'lucide-react';
+import { Search, User, Moon, Sun, Menu, X, Crown, Shield, Play, Wallet, Settings, MessageCircle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from '@/lib/theme';
@@ -103,6 +103,10 @@ export function Header() {
                 <DropdownMenuItem onClick={() => navigate('/deposit')} className="text-green-600">
                   <Wallet className="h-4 w-4 mr-2" />
                   Nạp tiền
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/upload')}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload video
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isAdmin && (

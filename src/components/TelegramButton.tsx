@@ -25,7 +25,7 @@ export function TelegramButton() {
   // Check if on chat page and hide button
   useEffect(() => {
     const checkPath = () => {
-      setIsHidden(window.location.pathname === '/chat');
+      setIsHidden(window.location.pathname === '/chat' || window.location.pathname === '/upload');
     };
 
     checkPath();
