@@ -5,12 +5,24 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Wallet, Settings, Send, QrCode, Upload, Loader2, CreditCard, Video } from 'lucide-react';
+import { Wallet, Settings, Send, QrCode, Upload, Loader2, CreditCard, Video, Cloud, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Setting {
   key: string;
   value: string;
+}
+
+interface BunnyTestResult {
+  hasApiKey: boolean;
+  hasStorageZone: boolean;
+  storageZoneName: string | null;
+  apiKeyLength: number;
+  connectionTest: {
+    success: boolean;
+    status?: number;
+    message: string;
+  } | null;
 }
 
 export function AdminSettings() {
@@ -22,7 +34,8 @@ export function AdminSettings() {
   const [bankName, setBankName] = useState('');
   const [bankAccount, setBankAccount] = useState('');
   const [bankHolder, setBankHolder] = useState('');
-
+  const [testingBunny, setTestingBunny] = useState(false);
+  const [bunnyTestResult, setBunnyTestResult] = useState<BunnyTestResult | null>(null);
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -102,6 +115,41 @@ export function AdminSettings() {
       updateSetting('bank_account', bankAccount),
       updateSetting('bank_holder', bankHolder)
     ]);
+  };
+
+  const handleTestBunny = async () => {
+    setTestingBunny(true);
+    setBunnyTestResult(null);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('test-bunny');
+      
+      if (response.error) {
+        toast.error('Không thể kiểm tra kết nối Bunny');
+        console.error('Test Bunny error:', response.error);
+        return;
+      }
+
+      const result = response.data as BunnyTestResult;
+      setBunnyTestResult(result);
+      
+      if (result.connectionTest?.success) {
+        toast.success('Kết nối Bunny.net thành công!');
+      } else {
+        toast.error(result.connectionTest?.message || 'Kết nối thất bại');
+      }
+    } catch (error) {
+      console.error('Test Bunny error:', error);
+      toast.error('Có lỗi xảy ra khi kiểm tra');
+    } finally {
+      setTestingBunny(false);
+    }
   };
 
   const handleQRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,7 +258,61 @@ export function AdminSettings() {
             />
           </div>
 
-          {/* Telegram Link */}
+          {/* Bunny.net Test */}
+          <div className="p-3 bg-secondary/50 rounded-lg space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <Cloud className="h-4 w-4 text-orange-500" />
+              </div>
+              <div>
+                <Label className="font-medium text-sm">Bunny.net Storage</Label>
+                <p className="text-xs text-muted-foreground">
+                  Kiểm tra kết nối với Bunny.net CDN cho video upload
+                </p>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleTestBunny} 
+              disabled={testingBunny}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              {testingBunny ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Đang kiểm tra...
+                </>
+              ) : (
+                <>
+                  <Cloud className="h-4 w-4 mr-2" />
+                  Test Bunny Credentials
+                </>
+              )}
+            </Button>
+
+            {bunnyTestResult && (
+              <div className={`p-3 rounded-lg text-sm ${bunnyTestResult.connectionTest?.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {bunnyTestResult.connectionTest?.success ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : (
+                    <XCircle className="h-4 w-4" />
+                  )}
+                  <span className="font-medium">
+                    {bunnyTestResult.connectionTest?.success ? 'Kết nối thành công!' : 'Kết nối thất bại'}
+                  </span>
+                </div>
+                <p className="text-xs">{bunnyTestResult.connectionTest?.message}</p>
+                <div className="mt-2 text-xs opacity-75">
+                  <div>Storage Zone: {bunnyTestResult.storageZoneName || 'Chưa cấu hình'}</div>
+                  <div>API Key: {bunnyTestResult.hasApiKey ? `Đã cấu hình (${bunnyTestResult.apiKeyLength} ký tự)` : 'Chưa cấu hình'}</div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="p-3 bg-secondary/50 rounded-lg space-y-3">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-[#0088cc]/10 rounded-lg">
