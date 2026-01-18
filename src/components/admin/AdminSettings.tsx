@@ -314,16 +314,28 @@ export function AdminSettings() {
                   }
                   setSavingBunny(true);
                   try {
-                    // Call edge function to save credentials
                     const response = await supabase.functions.invoke('save-bunny-credentials', {
-                      body: { storageZone: bunnyStorageZone.trim(), apiKey: bunnyApiKey.trim() }
+                      body: { storageZone: bunnyStorageZone.trim(), apiKey: bunnyApiKey.trim() },
                     });
+
                     if (response.error) {
-                      toast.error('Không thể lưu credentials');
-                    } else {
-                      toast.success('Đã lưu Bunny credentials! Hãy bấm Test để kiểm tra.');
-                      setBunnyApiKey('');
+                      toast.error('Không thể kiểm tra credentials');
+                      console.error(response.error);
+                      return;
                     }
+
+                    const result = response.data as BunnyTestResult;
+                    setBunnyTestResult(result);
+
+                    const hasSuccess = result.hostTests?.some(h => h.success);
+                    if (hasSuccess) {
+                      toast.success(`OK! Host đề xuất: ${result.recommendedHost}`);
+                    } else {
+                      toast.error(result.hostTests?.[0]?.message || 'Kết nối thất bại');
+                    }
+
+                    // Do not keep API key in UI after validation
+                    setBunnyApiKey('');
                   } catch (err) {
                     console.error(err);
                     toast.error('Có lỗi xảy ra');
@@ -338,10 +350,10 @@ export function AdminSettings() {
                 {savingBunny ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Đang lưu...
+                    Đang kiểm tra...
                   </>
                 ) : (
-                  'Lưu Bunny Credentials'
+                  'Kiểm tra (không lưu API key)'
                 )}
               </Button>
             </div>
