@@ -2,3 +2,6 @@ project_id = "qqdmqvbsmbjqftrbpliw"
 
 [functions.test-bunny]
 verify_jwt = false
+
+[functions.save-bunny-credentials]
+verify_jwt = false

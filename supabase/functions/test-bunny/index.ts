@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface HostTestResult {
+  host: string;
+  success: boolean;
+  status?: number;
+  message: string;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -58,58 +65,92 @@ serve(async (req) => {
       hasStorageZone: Boolean(bunnyStorageZone),
       storageZoneName: bunnyStorageZone || null,
       apiKeyLength: bunnyApiKey?.length || 0,
-      connectionTest: null as { success: boolean; status?: number; message: string } | null,
+      apiKeyPreview: bunnyApiKey ? `${bunnyApiKey.substring(0, 4)}...${bunnyApiKey.substring(bunnyApiKey.length - 4)}` : null,
+      hostTests: [] as HostTestResult[],
+      recommendedHost: null as string | null,
     };
 
     if (!bunnyApiKey || !bunnyStorageZone) {
-      results.connectionTest = {
+      results.hostTests = [{
+        host: 'N/A',
         success: false,
         message: 'Missing credentials: ' + 
           (!bunnyApiKey ? 'BUNNY_API_KEY ' : '') + 
           (!bunnyStorageZone ? 'BUNNY_STORAGE_ZONE' : ''),
-      };
+      }];
       return new Response(
         JSON.stringify(results),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Test connection by listing files in the storage zone
-    console.log(`Testing Bunny connection to zone: ${bunnyStorageZone}`);
-    const testUrl = `https://storage.bunnycdn.com/${bunnyStorageZone}/`;
-    
-    const testResponse = await fetch(testUrl, {
-      method: 'GET',
-      headers: {
-        'AccessKey': bunnyApiKey,
-        'Accept': 'application/json',
-      },
-    });
+    // Test both hosts
+    const hosts = [
+      'storage.bunnycdn.com',
+      'sg.storage.bunnycdn.com',
+    ];
 
-    if (testResponse.ok) {
-      results.connectionTest = {
-        success: true,
-        status: testResponse.status,
-        message: 'Connection successful! Bunny.net credentials are valid.',
-      };
-    } else {
-      const errorText = await testResponse.text();
-      console.error('Bunny test error:', testResponse.status, errorText);
+    console.log(`Testing Bunny connection to zone: ${bunnyStorageZone}`);
+
+    const testHost = async (host: string): Promise<HostTestResult> => {
+      const testUrl = `https://${host}/${bunnyStorageZone}/`;
+      console.log(`Testing host: ${host}`);
       
-      let message = 'Connection failed';
-      if (testResponse.status === 401) {
-        message = 'Invalid API Key (Password). Please check BUNNY_API_KEY.';
-      } else if (testResponse.status === 404) {
-        message = 'Storage zone not found. Please check BUNNY_STORAGE_ZONE.';
-      } else {
-        message = `Error ${testResponse.status}: ${errorText}`;
+      try {
+        const testResponse = await fetch(testUrl, {
+          method: 'GET',
+          headers: {
+            'AccessKey': bunnyApiKey,
+            'Accept': 'application/json',
+          },
+        });
+
+        if (testResponse.ok) {
+          return {
+            host,
+            success: true,
+            status: testResponse.status,
+            message: 'Connection successful!',
+          };
+        } else {
+          const errorText = await testResponse.text();
+          console.error(`Host ${host} error:`, testResponse.status, errorText);
+          
+          let message = 'Connection failed';
+          if (testResponse.status === 401) {
+            message = 'Invalid API Key (Password)';
+          } else if (testResponse.status === 404) {
+            message = 'Storage zone not found';
+          } else {
+            message = `Error ${testResponse.status}`;
+          }
+          
+          return {
+            host,
+            success: false,
+            status: testResponse.status,
+            message,
+          };
+        }
+      } catch (err: unknown) {
+        const errMessage = err instanceof Error ? err.message : 'Network error';
+        console.error(`Host ${host} exception:`, errMessage);
+        return {
+          host,
+          success: false,
+          message: errMessage,
+        };
       }
-      
-      results.connectionTest = {
-        success: false,
-        status: testResponse.status,
-        message,
-      };
+    };
+
+    // Test all hosts in parallel
+    const hostResults = await Promise.all(hosts.map(testHost));
+    results.hostTests = hostResults;
+
+    // Find recommended host (first successful one)
+    const successfulHost = hostResults.find(r => r.success);
+    if (successfulHost) {
+      results.recommendedHost = successfulHost.host;
     }
 
     return new Response(

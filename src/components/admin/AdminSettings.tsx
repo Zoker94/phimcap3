@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Wallet, Settings, Send, QrCode, Upload, Loader2, CreditCard, Video, Cloud, CheckCircle, XCircle } from 'lucide-react';
+import { Wallet, Settings, Send, QrCode, Upload, Loader2, CreditCard, Video, Cloud, CheckCircle, XCircle, Key } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Setting {
@@ -13,16 +13,21 @@ interface Setting {
   value: string;
 }
 
+interface HostTestResult {
+  host: string;
+  success: boolean;
+  status?: number;
+  message: string;
+}
+
 interface BunnyTestResult {
   hasApiKey: boolean;
   hasStorageZone: boolean;
   storageZoneName: string | null;
   apiKeyLength: number;
-  connectionTest: {
-    success: boolean;
-    status?: number;
-    message: string;
-  } | null;
+  apiKeyPreview: string | null;
+  hostTests: HostTestResult[];
+  recommendedHost: string | null;
 }
 
 export function AdminSettings() {
@@ -36,6 +41,9 @@ export function AdminSettings() {
   const [bankHolder, setBankHolder] = useState('');
   const [testingBunny, setTestingBunny] = useState(false);
   const [bunnyTestResult, setBunnyTestResult] = useState<BunnyTestResult | null>(null);
+  const [bunnyStorageZone, setBunnyStorageZone] = useState('');
+  const [bunnyApiKey, setBunnyApiKey] = useState('');
+  const [savingBunny, setSavingBunny] = useState(false);
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -139,10 +147,12 @@ export function AdminSettings() {
       const result = response.data as BunnyTestResult;
       setBunnyTestResult(result);
       
-      if (result.connectionTest?.success) {
-        toast.success('Kết nối Bunny.net thành công!');
+      const hasSuccess = result.hostTests?.some(h => h.success);
+      if (hasSuccess) {
+        toast.success(`Kết nối Bunny.net thành công! Host: ${result.recommendedHost}`);
       } else {
-        toast.error(result.connectionTest?.message || 'Kết nối thất bại');
+        const firstError = result.hostTests?.[0]?.message || 'Kết nối thất bại';
+        toast.error(firstError);
       }
     } catch (error) {
       console.error('Test Bunny error:', error);
@@ -258,6 +268,85 @@ export function AdminSettings() {
             />
           </div>
 
+          {/* Bunny.net Credentials */}
+          <div className="p-3 bg-secondary/50 rounded-lg space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <Key className="h-4 w-4 text-orange-500" />
+              </div>
+              <div>
+                <Label className="font-medium text-sm">Bunny.net Credentials</Label>
+                <p className="text-xs text-muted-foreground">
+                  Cấu hình Storage Zone và API Key cho video upload
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Storage Zone Name</Label>
+                <Input
+                  placeholder="zoker941"
+                  value={bunnyStorageZone}
+                  onChange={(e) => setBunnyStorageZone(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tên Storage Zone (không phải URL)
+                </p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">API Key (Password)</Label>
+                <Input
+                  type="password"
+                  placeholder="531d52e9-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  value={bunnyApiKey}
+                  onChange={(e) => setBunnyApiKey(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Lấy từ Bunny Dashboard → Storage Zone → FTP & API Access → Password (không phải Read-only)
+                </p>
+              </div>
+              <Button 
+                onClick={async () => {
+                  if (!bunnyStorageZone.trim() || !bunnyApiKey.trim()) {
+                    toast.error('Vui lòng nhập đầy đủ Storage Zone và API Key');
+                    return;
+                  }
+                  setSavingBunny(true);
+                  try {
+                    // Call edge function to save credentials
+                    const response = await supabase.functions.invoke('save-bunny-credentials', {
+                      body: { storageZone: bunnyStorageZone.trim(), apiKey: bunnyApiKey.trim() }
+                    });
+                    if (response.error) {
+                      toast.error('Không thể lưu credentials');
+                    } else {
+                      toast.success('Đã lưu Bunny credentials! Hãy bấm Test để kiểm tra.');
+                      setBunnyApiKey('');
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    toast.error('Có lỗi xảy ra');
+                  } finally {
+                    setSavingBunny(false);
+                  }
+                }} 
+                disabled={savingBunny}
+                size="sm" 
+                className="w-full"
+              >
+                {savingBunny ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Đang lưu...
+                  </>
+                ) : (
+                  'Lưu Bunny Credentials'
+                )}
+              </Button>
+            </div>
+          </div>
+
           {/* Bunny.net Test */}
           <div className="p-3 bg-secondary/50 rounded-lg space-y-3">
             <div className="flex items-center gap-3">
@@ -265,9 +354,9 @@ export function AdminSettings() {
                 <Cloud className="h-4 w-4 text-orange-500" />
               </div>
               <div>
-                <Label className="font-medium text-sm">Bunny.net Storage</Label>
+                <Label className="font-medium text-sm">Test Bunny.net Connection</Label>
                 <p className="text-xs text-muted-foreground">
-                  Kiểm tra kết nối với Bunny.net CDN cho video upload
+                  Kiểm tra kết nối với cả 2 host: global và Singapore
                 </p>
               </div>
             </div>
@@ -293,21 +382,33 @@ export function AdminSettings() {
             </Button>
 
             {bunnyTestResult && (
-              <div className={`p-3 rounded-lg text-sm ${bunnyTestResult.connectionTest?.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  {bunnyTestResult.connectionTest?.success ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <XCircle className="h-4 w-4" />
+              <div className="space-y-2">
+                {bunnyTestResult.hostTests?.map((hostResult, idx) => (
+                  <div 
+                    key={idx}
+                    className={`p-3 rounded-lg text-sm ${hostResult.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {hostResult.success ? (
+                        <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="h-4 w-4 flex-shrink-0" />
+                      )}
+                      <span className="font-medium text-xs">{hostResult.host}</span>
+                      <span className="text-xs opacity-75">- {hostResult.message}</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="p-2 bg-secondary rounded-lg text-xs space-y-1">
+                  <div>Storage Zone: <span className="font-mono">{bunnyTestResult.storageZoneName || 'Chưa cấu hình'}</span></div>
+                  <div>API Key: {bunnyTestResult.hasApiKey ? (
+                    <span className="font-mono">{bunnyTestResult.apiKeyPreview} ({bunnyTestResult.apiKeyLength} ký tự)</span>
+                  ) : 'Chưa cấu hình'}</div>
+                  {bunnyTestResult.recommendedHost && (
+                    <div className="text-green-600 dark:text-green-400 font-medium">
+                      ✓ Đề xuất dùng host: {bunnyTestResult.recommendedHost}
+                    </div>
                   )}
-                  <span className="font-medium">
-                    {bunnyTestResult.connectionTest?.success ? 'Kết nối thành công!' : 'Kết nối thất bại'}
-                  </span>
-                </div>
-                <p className="text-xs">{bunnyTestResult.connectionTest?.message}</p>
-                <div className="mt-2 text-xs opacity-75">
-                  <div>Storage Zone: {bunnyTestResult.storageZoneName || 'Chưa cấu hình'}</div>
-                  <div>API Key: {bunnyTestResult.hasApiKey ? `Đã cấu hình (${bunnyTestResult.apiKeyLength} ký tự)` : 'Chưa cấu hình'}</div>
                 </div>
               </div>
             )}
