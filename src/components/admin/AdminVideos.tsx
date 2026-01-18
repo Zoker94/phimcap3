@@ -283,13 +283,19 @@ export function AdminVideos() {
 
   const toggleVideoVisibility = async (video: Video) => {
     const newVisibility = video.visibility === 'public' ? 'hidden' : 'public';
-    const { error } = await supabase
+    console.log('Toggle visibility for video:', video.id, 'from', video.visibility, 'to', newVisibility);
+    
+    const { data, error } = await supabase
       .from('videos')
       .update({ visibility: newVisibility })
-      .eq('id', video.id);
+      .eq('id', video.id)
+      .select();
+    
+    console.log('Update result:', { data, error });
     
     if (error) {
-      toast.error('Lỗi cập nhật trạng thái hiển thị');
+      console.error('Visibility update error:', error);
+      toast.error('Lỗi cập nhật trạng thái hiển thị: ' + error.message);
     } else {
       toast.success(newVisibility === 'public' ? 'Đã hiển thị video' : 'Đã ẩn video');
       fetchData();
