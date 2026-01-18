@@ -23,6 +23,7 @@ const Index = () => {
       const { data } = await supabase
         .from('videos')
         .select('id, title, thumbnail_url, duration, views, is_vip, is_vietsub, is_uncensored')
+        .eq('status', 'approved')
         .order('created_at', { ascending: false });
       
       if (data) {
