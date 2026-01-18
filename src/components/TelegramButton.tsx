@@ -4,6 +4,7 @@ import { Send } from 'lucide-react';
 
 export function TelegramButton() {
   const [telegramLink, setTelegramLink] = useState<string | null>(null);
+  const [isHidden, setIsHidden] = useState(false);
 
   useEffect(() => {
     const fetchTelegramLink = async () => {
@@ -21,7 +22,28 @@ export function TelegramButton() {
     fetchTelegramLink();
   }, []);
 
-  if (!telegramLink) return null;
+  // Check if on chat page and hide button
+  useEffect(() => {
+    const checkPath = () => {
+      setIsHidden(window.location.pathname === '/chat');
+    };
+
+    checkPath();
+    
+    // Listen for URL changes
+    window.addEventListener('popstate', checkPath);
+    
+    // Create observer for URL changes (for SPA navigation)
+    const observer = new MutationObserver(checkPath);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      window.removeEventListener('popstate', checkPath);
+      observer.disconnect();
+    };
+  }, []);
+
+  if (!telegramLink || isHidden) return null;
 
   return (
     <a
