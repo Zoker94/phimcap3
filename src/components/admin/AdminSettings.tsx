@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Wallet, Settings, Send, QrCode, Upload, Loader2, CreditCard } from 'lucide-react';
+import { Wallet, Settings, Send, QrCode, Upload, Loader2, CreditCard, Video } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Setting {
@@ -185,6 +185,28 @@ export function AdminSettings() {
               id="deposit-toggle"
               checked={getSettingValue('deposit_enabled')}
               onCheckedChange={(checked) => updateSetting('deposit_enabled', checked.toString())}
+            />
+          </div>
+
+          {/* Upload Video Toggle */}
+          <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Video className="h-4 w-4 text-blue-500" />
+              </div>
+              <div>
+                <Label htmlFor="upload-toggle" className="font-medium text-sm">
+                  Upload video
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Cho phép thành viên upload video lên hệ thống
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="upload-toggle"
+              checked={getSettingValue('upload_enabled')}
+              onCheckedChange={(checked) => updateSetting('upload_enabled', checked.toString())}
             />
           </div>
 

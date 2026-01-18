@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
-import { Upload as UploadIcon, Video, Image, ArrowLeft, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Upload as UploadIcon, Video, Image, ArrowLeft, CheckCircle, Clock, XCircle, Globe, Lock, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface Category {
@@ -23,6 +24,7 @@ interface UserVideo {
   title: string;
   thumbnail_url: string | null;
   status: string;
+  visibility: string;
   created_at: string;
   views: number;
 }
@@ -35,6 +37,7 @@ export default function Upload() {
   const [userVideos, setUserVideos] = useState<UserVideo[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadEnabled, setUploadEnabled] = useState<boolean | null>(null);
   
   // Form state
   const [title, setTitle] = useState("");
@@ -43,6 +46,7 @@ export default function Upload() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [visibility, setVisibility] = useState<string>("public");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -56,11 +60,23 @@ export default function Upload() {
   }, [user, loading, navigate]);
 
   useEffect(() => {
+    checkUploadEnabled();
     fetchCategories();
     if (user) {
       fetchUserVideos();
     }
   }, [user]);
+
+  const checkUploadEnabled = async () => {
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "upload_enabled")
+      .single();
+    
+    // Default to true if setting doesn't exist
+    setUploadEnabled(data?.value === "true" || data === null);
+  };
 
   const fetchCategories = async () => {
     const { data } = await supabase.from("categories").select("id, name").order("name");
@@ -70,10 +86,10 @@ export default function Upload() {
   const fetchUserVideos = async () => {
     const { data } = await supabase
       .from("videos")
-      .select("id, title, thumbnail_url, status, created_at, views")
+      .select("id, title, thumbnail_url, status, visibility, created_at, views")
       .eq("uploaded_by", user?.id)
       .order("created_at", { ascending: false });
-    if (data) setUserVideos(data);
+    if (data) setUserVideos(data as UserVideo[]);
   };
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,6 +176,7 @@ export default function Upload() {
       if (description) formData.append("description", description.trim());
       if (categoryId) formData.append("category_id", categoryId);
       if (thumbnailFile) formData.append("thumbnail", thumbnailFile);
+      formData.append("visibility", visibility);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-video`,
@@ -194,6 +211,7 @@ export default function Upload() {
       setVideoFile(null);
       setThumbnailFile(null);
       setThumbnailPreview(null);
+      setVisibility("public");
       
       // Refresh user videos
       fetchUserVideos();
@@ -237,10 +255,46 @@ export default function Upload() {
     }
   };
 
-  if (loading) {
+  const getVisibilityIcon = (vis: string) => {
+    return vis === 'private' 
+      ? <Lock className="h-3 w-3 text-muted-foreground" /> 
+      : <Globe className="h-3 w-3 text-muted-foreground" />;
+  };
+
+  if (loading || uploadEnabled === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!uploadEnabled) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <div className="flex items-center gap-4 mb-6">
+            <Link to="/">
+              <Button variant="ghost" size="icon">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold">Upload Video</h1>
+          </div>
+          
+          <Card>
+            <CardContent className="py-12 text-center">
+              <AlertTriangle className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Chức năng đang tạm đóng</h2>
+              <p className="text-muted-foreground">
+                Tính năng upload video hiện đang bị tắt. Vui lòng quay lại sau.
+              </p>
+              <Link to="/">
+                <Button className="mt-6">Về trang chủ</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -362,6 +416,33 @@ export default function Upload() {
                   </div>
                 </div>
 
+                {/* Visibility Selection */}
+                <div className="space-y-3">
+                  <Label>Chế độ hiển thị</Label>
+                  <RadioGroup value={visibility} onValueChange={setVisibility} disabled={uploading}>
+                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors">
+                      <RadioGroupItem value="public" id="public" />
+                      <Label htmlFor="public" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Globe className="h-4 w-4 text-green-500" />
+                        <div>
+                          <p className="font-medium text-sm">Công khai</p>
+                          <p className="text-xs text-muted-foreground">Mọi người đều có thể xem sau khi được duyệt</p>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors">
+                      <RadioGroupItem value="private" id="private" />
+                      <Label htmlFor="private" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Lock className="h-4 w-4 text-yellow-500" />
+                        <div>
+                          <p className="font-medium text-sm">Riêng tư</p>
+                          <p className="text-xs text-muted-foreground">Chỉ bạn mới có thể xem video này</p>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
                 {uploading && (
                   <div className="space-y-2">
                     <Progress value={uploadProgress} />
@@ -413,10 +494,15 @@ export default function Upload() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{video.title}</h3>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           {getStatusIcon(video.status)}
                           <span className="text-xs text-muted-foreground">
                             {getStatusText(video.status)}
+                          </span>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            {getVisibilityIcon(video.visibility)}
+                            {video.visibility === 'private' ? 'Riêng tư' : 'Công khai'}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
