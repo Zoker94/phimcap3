@@ -11,7 +11,7 @@ export function AdminBackup() {
   const generateBackupSQL = async () => {
     setLoading(true);
     try {
-      // Fetch all data from tables
+      // Fetch all data from tables with no row limit (range 0-10000 to get all)
       const [
         videosRes,
         categoriesRes,
@@ -23,19 +23,21 @@ export function AdminBackup() {
         advertisementsRes,
         siteSettingsRes,
         commentsRes,
-        chatMessagesRes
+        chatMessagesRes,
+        commentReactionsRes
       ] = await Promise.all([
-        supabase.from('videos').select('*'),
-        supabase.from('categories').select('*'),
-        supabase.from('tags').select('*'),
-        supabase.from('video_tags').select('*'),
-        supabase.from('profiles').select('*'),
-        supabase.from('user_roles').select('*'),
-        supabase.from('notifications').select('*'),
-        supabase.from('advertisements').select('*'),
-        supabase.from('site_settings').select('*'),
-        supabase.from('comments').select('*'),
-        supabase.from('chat_messages').select('*')
+        supabase.from('videos').select('*').range(0, 9999),
+        supabase.from('categories').select('*').range(0, 9999),
+        supabase.from('tags').select('*').range(0, 9999),
+        supabase.from('video_tags').select('*').range(0, 9999),
+        supabase.from('profiles').select('*').range(0, 9999),
+        supabase.from('user_roles').select('*').range(0, 9999),
+        supabase.from('notifications').select('*').range(0, 9999),
+        supabase.from('advertisements').select('*').range(0, 9999),
+        supabase.from('site_settings').select('*').range(0, 9999),
+        supabase.from('comments').select('*').range(0, 9999),
+        supabase.from('chat_messages').select('*').range(0, 9999),
+        supabase.from('comment_reactions').select('*').range(0, 9999)
       ]);
 
       const escapeSQL = (value: any): string => {
@@ -84,6 +86,7 @@ SET session_replication_role = replica;
       backupSQL += generateInserts('videos', videosRes.data);
       backupSQL += generateInserts('video_tags', videoTagsRes.data);
       backupSQL += generateInserts('comments', commentsRes.data);
+      backupSQL += generateInserts('comment_reactions', commentReactionsRes.data);
       backupSQL += generateInserts('chat_messages', chatMessagesRes.data);
       backupSQL += generateInserts('notifications', notificationsRes.data);
       backupSQL += generateInserts('advertisements', advertisementsRes.data);
