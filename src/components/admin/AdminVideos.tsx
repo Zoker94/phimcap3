@@ -282,19 +282,15 @@ export function AdminVideos() {
   };
 
   const toggleVideoVisibility = async (video: Video) => {
-    const newVisibility = video.visibility === 'public' ? 'hidden' : 'public';
-    console.log('Toggle visibility for video:', video.id, 'from', video.visibility, 'to', newVisibility);
-    
-    const { data, error } = await supabase
+    // DB constraint allows: 'public' | 'private'
+    const newVisibility = video.visibility === 'public' ? 'private' : 'public';
+
+    const { error } = await supabase
       .from('videos')
       .update({ visibility: newVisibility })
-      .eq('id', video.id)
-      .select();
-    
-    console.log('Update result:', { data, error });
-    
+      .eq('id', video.id);
+
     if (error) {
-      console.error('Visibility update error:', error);
       toast.error('Lỗi cập nhật trạng thái hiển thị: ' + error.message);
     } else {
       toast.success(newVisibility === 'public' ? 'Đã hiển thị video' : 'Đã ẩn video');
@@ -533,7 +529,7 @@ export function AdminVideos() {
                   <h3 className="text-xs font-medium line-clamp-1">{video.title}</h3>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     {getStatusBadge(video.status)}
-                    {video.visibility === 'hidden' && (
+                    {video.visibility === 'private' && (
                       <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
                         <EyeOff className="h-2.5 w-2.5 mr-1" />Đã ẩn
                       </Badge>
@@ -570,11 +566,11 @@ export function AdminVideos() {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className={`h-7 w-7 p-0 ${video.visibility === 'hidden' ? 'text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10' : 'text-muted-foreground hover:text-foreground'}`}
+                      className={`h-7 w-7 p-0 ${video.visibility === 'private' ? 'text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10' : 'text-muted-foreground hover:text-foreground'}`}
                       onClick={() => toggleVideoVisibility(video)}
-                      title={video.visibility === 'hidden' ? 'Hiển thị video' : 'Ẩn video'}
+                      title={video.visibility === 'private' ? 'Hiển thị video' : 'Ẩn video'}
                     >
-                      {video.visibility === 'hidden' ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      {video.visibility === 'private' ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </Button>
                   )}
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditDialog(video)}>
