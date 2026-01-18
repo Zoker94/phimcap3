@@ -12,6 +12,8 @@ import { PopupAdvertisement } from "@/components/PopupAdvertisement";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Video from "./pages/Video";
 import Category from "./pages/Category";
 import Search from "./pages/Search";
@@ -39,6 +41,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/video/:id" element={<Video />} />
               <Route path="/category/:slug" element={<Category />} />
               <Route path="/search" element={<Search />} />

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,16 +10,26 @@ import { Eye, EyeOff, Play } from 'lucide-react';
 
 export default function Register() {
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!username.trim()) {
+      toast.error('Vui lòng nhập biệt danh');
+      return;
+    }
+
+    if (username.trim().length < 3) {
+      toast.error('Biệt danh phải có ít nhất 3 ký tự');
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast.error('Mật khẩu không khớp');
       return;
@@ -32,11 +42,39 @@ export default function Register() {
 
     setLoading(true);
 
-    const { error } = await signUp(email, password);
+    // Check if username already exists
+    const { data: existingUser } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username.trim())
+      .maybeSingle();
+
+    if (existingUser) {
+      toast.error('Biệt danh này đã được sử dụng');
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: {
+          username: username.trim()
+        }
+      }
+    });
     
     if (error) {
       toast.error('Đăng ký thất bại', { description: error.message });
-    } else {
+    } else if (data.user) {
+      // Update the profile with the username
+      await supabase
+        .from('profiles')
+        .update({ username: username.trim() })
+        .eq('user_id', data.user.id);
+
       toast.success('Đăng ký thành công');
       navigate('/');
     }
@@ -57,7 +95,21 @@ export default function Register() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm">Email</Label>
+              <Label htmlFor="username" className="text-sm">Biệt danh <span className="text-destructive">*</span></Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Nhập biệt danh của bạn"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="h-9"
+                minLength={3}
+              />
+              <p className="text-xs text-muted-foreground">Biệt danh sẽ được hiển thị trong chat</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm">Email <span className="text-destructive">*</span></Label>
               <Input
                 id="email"
                 type="email"
@@ -69,7 +121,7 @@ export default function Register() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm">Mật khẩu</Label>
+              <Label htmlFor="password" className="text-sm">Mật khẩu <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -92,7 +144,7 @@ export default function Register() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm">Xác nhận mật khẩu</Label>
+              <Label htmlFor="confirmPassword" className="text-sm">Xác nhận mật khẩu <span className="text-destructive">*</span></Label>
               <Input
                 id="confirmPassword"
                 type={showPassword ? 'text' : 'password'}

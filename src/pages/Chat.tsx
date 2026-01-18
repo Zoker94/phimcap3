@@ -347,7 +347,7 @@ export default function Chat() {
                         {msgIsVip && !msgIsAdmin && !isOwnMessage(message.user_id) && (
                           <Crown className="w-3 h-3 text-yellow-500" />
                         )}
-                        {isOwnMessage(message.user_id) ? 'Bạn' : message.username}
+                        {isOwnMessage(message.user_id) ? 'Bạn' : (message.username || 'Ẩn danh')}
                         {msgIsAdmin && !isOwnMessage(message.user_id) && (
                           <span className="text-[10px] bg-red-500/20 text-red-500 px-1 rounded">Admin</span>
                         )}
