@@ -109,34 +109,62 @@ Deno.serve(async (req) => {
     const videoExtension = videoFile.name.split('.').pop() || 'mp4';
     const videoFileName = `${timestamp}_${sanitizedTitle}.${videoExtension}`;
 
-    // Upload video to Bunny.net
+    // Upload video to Bunny.net (try both hosts)
     console.log(`Uploading video: ${videoFileName} (zone: ${bunnyStorageZone})`);
     const videoBuffer = await videoFile.arrayBuffer();
 
-    const bunnyUploadUrl = `https://storage.bunnycdn.com/${bunnyStorageZone}/videos/${videoFileName}`;
-    const bunnyResponse = await fetch(bunnyUploadUrl, {
-      method: 'PUT',
-      headers: {
-        // Bunny Storage API expects the Storage Zone "Password" here
-        'AccessKey': bunnyApiKey,
-        'Content-Type': 'application/octet-stream',
-      },
-      body: videoBuffer,
-    });
+    const hostsToTry = ['storage.bunnycdn.com', 'sg.storage.bunnycdn.com'];
 
-    if (!bunnyResponse.ok) {
-      const errorText = await bunnyResponse.text();
-      console.error('Bunny upload error:', errorText);
+    const tryUpload = async (host: string) => {
+      const bunnyUploadUrl = `https://${host}/${bunnyStorageZone}/videos/${videoFileName}`;
+      const res = await fetch(bunnyUploadUrl, {
+        method: 'PUT',
+        headers: {
+          // Bunny Storage API expects the Storage Zone "Password" here
+          'AccessKey': bunnyApiKey,
+          'Content-Type': 'application/octet-stream',
+        },
+        body: videoBuffer,
+      });
+      return { host, res };
+    };
+
+    let uploadAttempt: { host: string; res: Response } | null = null;
+    for (const host of hostsToTry) {
+      const attempt = await tryUpload(host);
+      if (attempt.res.ok) {
+        uploadAttempt = attempt;
+        break;
+      }
+
+      const errorText = await attempt.res.text();
+      console.error(`Bunny upload error (${host}):`, errorText);
+      // If we got 401 on one host, try the next host as well.
+      uploadAttempt = attempt;
+    }
+
+    if (!uploadAttempt || !uploadAttempt.res.ok) {
+      const status = uploadAttempt?.res.status ?? 500;
+      let details = '';
+      try {
+        details = uploadAttempt ? await uploadAttempt.res.text() : '';
+      } catch (_) {
+        details = '';
+      }
+
       return new Response(
         JSON.stringify({
           error: 'Failed to upload video to storage',
           provider: 'bunny',
-          status: bunnyResponse.status,
-          details: errorText,
+          status,
+          details,
+          triedHosts: hostsToTry,
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`Video storage upload succeeded using host: ${uploadAttempt.host}`);
 
     // Video URL on Bunny CDN
     const videoUrl = `https://${bunnyStorageZone}.b-cdn.net/videos/${videoFileName}`;
@@ -150,18 +178,26 @@ Deno.serve(async (req) => {
         const thumbnailFileName = `${timestamp}_${sanitizedTitle}_thumb.${thumbnailExtension}`;
         const thumbnailBuffer = await thumbnailFile.arrayBuffer();
 
-        const thumbUploadUrl = `https://storage.bunnycdn.com/${bunnyStorageZone}/thumbnails/${thumbnailFileName}`;
-        const thumbResponse = await fetch(thumbUploadUrl, {
-          method: 'PUT',
-          headers: {
-            'AccessKey': bunnyApiKey,
-            'Content-Type': 'application/octet-stream',
-          },
-          body: thumbnailBuffer,
-        });
+        const tryThumbUpload = async (host: string) => {
+          const thumbUploadUrl = `https://${host}/${bunnyStorageZone}/thumbnails/${thumbnailFileName}`;
+          const res = await fetch(thumbUploadUrl, {
+            method: 'PUT',
+            headers: {
+              'AccessKey': bunnyApiKey,
+              'Content-Type': 'application/octet-stream',
+            },
+            body: thumbnailBuffer,
+          });
+          return { host, res };
+        };
 
-        if (thumbResponse.ok) {
-          thumbnailUrl = `https://${bunnyStorageZone}.b-cdn.net/thumbnails/${thumbnailFileName}`;
+        for (const host of ['storage.bunnycdn.com', 'sg.storage.bunnycdn.com']) {
+          const attempt = await tryThumbUpload(host);
+          if (attempt.res.ok) {
+            thumbnailUrl = `https://${bunnyStorageZone}.b-cdn.net/thumbnails/${thumbnailFileName}`;
+            console.log(`Thumbnail upload succeeded using host: ${host}`);
+            break;
+          }
         }
       }
     }
