@@ -361,9 +361,11 @@ export type Database = {
           is_uncensored: boolean | null
           is_vietsub: boolean | null
           is_vip: boolean | null
+          status: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string | null
+          uploaded_by: string | null
           video_type: string | null
           video_url: string
           views: number | null
@@ -377,9 +379,11 @@ export type Database = {
           is_uncensored?: boolean | null
           is_vietsub?: boolean | null
           is_vip?: boolean | null
+          status?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string | null
+          uploaded_by?: string | null
           video_type?: string | null
           video_url: string
           views?: number | null
@@ -393,9 +397,11 @@ export type Database = {
           is_uncensored?: boolean | null
           is_vietsub?: boolean | null
           is_vip?: boolean | null
+          status?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
+          uploaded_by?: string | null
           video_type?: string | null
           video_url?: string
           views?: number | null

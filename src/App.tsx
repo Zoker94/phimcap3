@@ -22,6 +22,7 @@ import VipPurchase from "./pages/VipPurchase";
 import Deposit from "./pages/Deposit";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import Upload from "./pages/Upload";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="/deposit" element={<Deposit />} />
               <Route path="/chat" element={<Chat />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/upload" element={<Upload />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
