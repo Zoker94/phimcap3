@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Download, Database, Loader2, Github } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function AdminBackup() {
+interface AdminBackupProps {
+  isAdmin: boolean;
+}
+
+export function AdminBackup({ isAdmin }: AdminBackupProps) {
   const [loading, setLoading] = useState(false);
 
   const generateBackupSQL = async () => {
@@ -123,77 +127,92 @@ COMMIT;
 
   return (
     <div className="space-y-6">
-      {/* SQL Backup Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Backup Database (SQL)</CardTitle>
-          </div>
-          <CardDescription className="text-xs">
-            Tải xuống bản sao lưu dữ liệu dưới dạng file SQL
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 bg-secondary/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Dữ liệu sẽ được backup:</h4>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Videos, Categories, Tags</li>
-                <li>• User Profiles, Roles</li>
-                <li>• Comments, Chat Messages</li>
-                <li>• Notifications, Advertisements</li>
-                <li>• Site Settings</li>
-              </ul>
+      {/* SQL Backup Card - Only for Admin */}
+      {isAdmin && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Backup Database (SQL)</CardTitle>
             </div>
-            
+            <CardDescription className="text-xs">
+              Tải xuống bản sao lưu dữ liệu dưới dạng file SQL
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-secondary/50 rounded-lg">
+                <h4 className="text-sm font-medium mb-2">Dữ liệu sẽ được backup:</h4>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Videos, Categories, Tags</li>
+                  <li>• User Profiles, Roles</li>
+                  <li>• Comments, Chat Messages</li>
+                  <li>• Notifications, Advertisements</li>
+                  <li>• Site Settings</li>
+                </ul>
+              </div>
+              
+              <Button 
+                onClick={generateBackupSQL} 
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Đang tạo backup...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Tải xuống Backup SQL
+                  </>
+                )}
+              </Button>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                File SQL sẽ được tải về máy của bạn. Lưu ý: Backup chỉ chứa dữ liệu, không chứa schema.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Code Backup Card - Only for Admin */}
+      {isAdmin && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Github className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Backup Mã Nguồn (Code)</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Tải xuống toàn bộ mã nguồn website dưới dạng ZIP
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <Button 
-              onClick={generateBackupSQL} 
-              disabled={loading}
+              variant="outline"
               className="w-full"
+              onClick={() => window.open('https://github.com/Zoker94/phimcap3/archive/refs/heads/main.zip', '_blank')}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Đang tạo backup...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Tải xuống Backup SQL
-                </>
-              )}
+              <Download className="h-4 w-4 mr-2" />
+              Tải Backup Mã Nguồn (ZIP)
             </Button>
+          </CardContent>
+        </Card>
+      )}
 
-            <p className="text-[10px] text-muted-foreground text-center">
-              File SQL sẽ được tải về máy của bạn. Lưu ý: Backup chỉ chứa dữ liệu, không chứa schema.
+      {/* Message for managers */}
+      {!isAdmin && (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground text-center">
+              Bạn không có quyền tải backup. Chỉ Admin mới có thể sử dụng chức năng này.
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Code Backup Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Github className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Backup Mã Nguồn (Code)</CardTitle>
-          </div>
-          <CardDescription className="text-xs">
-            Tải xuống toàn bộ mã nguồn website dưới dạng ZIP
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button 
-            variant="outline"
-            className="w-full"
-            onClick={() => window.open('https://github.com/Zoker94/phimcap3/archive/refs/heads/main.zip', '_blank')}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Tải Backup Mã Nguồn (ZIP)
-          </Button>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

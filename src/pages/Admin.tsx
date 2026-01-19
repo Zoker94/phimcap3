@@ -13,8 +13,11 @@ import { AdminTags } from '@/components/admin/AdminTags';
 import { AdminBackup } from '@/components/admin/AdminBackup';
 
 export default function AdminPage() {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isManager, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Check if user has access (admin or manager)
+  const hasAccess = isAdmin || isManager;
 
   if (loading) {
     return (
@@ -24,7 +27,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (!hasAccess) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <p className="text-sm text-muted-foreground mb-4">Bạn không có quyền truy cập trang này</p>
@@ -96,7 +99,7 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="users">
-            <AdminUsers />
+            <AdminUsers isAdmin={isAdmin} />
           </TabsContent>
 
           <TabsContent value="categories">
@@ -112,7 +115,7 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="backup">
-            <AdminBackup />
+            <AdminBackup isAdmin={isAdmin} />
           </TabsContent>
 
           <TabsContent value="settings">

@@ -19,6 +19,7 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isManager: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const handleBannedUser = async () => {
@@ -40,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
+    setIsManager(false);
   };
 
   const fetchProfile = async (userId: string) => {
@@ -61,11 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .single();
+      .eq('user_id', userId);
     
-    setIsAdmin(!!roleData);
+    const roles = roleData?.map(r => r.role) || [];
+    setIsAdmin(roles.includes('admin'));
+    setIsManager(roles.includes('manager'));
   };
 
   const refreshProfile = async () => {
@@ -83,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setIsAdmin(false);
+          setIsManager(false);
         }
         setLoading(false);
       }
@@ -165,13 +169,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
+    setIsManager(false);
   };
 
   return (
     <AuthContext.Provider value={{ 
       user, 
       profile, 
-      isAdmin, 
+      isAdmin,
+      isManager,
       loading, 
       signIn, 
       signUp, 
