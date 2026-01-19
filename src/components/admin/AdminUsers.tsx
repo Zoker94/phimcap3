@@ -4,11 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Ban, Crown, Key, DollarSign, Search, UserX, UserCheck } from 'lucide-react';
+import { Crown, Key, DollarSign, Search, UserX, UserCheck, Shield, ShieldOff } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -21,8 +20,18 @@ interface Profile {
   display_id: number;
 }
 
-export function AdminUsers() {
+interface UserRole {
+  user_id: string;
+  role: 'admin' | 'moderator' | 'manager';
+}
+
+interface AdminUsersProps {
+  isAdmin: boolean;
+}
+
+export function AdminUsers({ isAdmin }: AdminUsersProps) {
   const [users, setUsers] = useState<Profile[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -35,18 +44,26 @@ export function AdminUsers() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchUsers = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('user_roles').select('user_id, role')
+    ]);
     
-    if (data) setUsers(data as Profile[]);
+    if (profilesRes.data) setUsers(profilesRes.data as Profile[]);
+    if (rolesRes.data) setUserRoles(rolesRes.data as UserRole[]);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const getUserRole = (userId: string): 'admin' | 'manager' | null => {
+    const role = userRoles.find(r => r.user_id === userId);
+    if (role?.role === 'admin') return 'admin';
+    if (role?.role === 'manager') return 'manager';
+    return null;
+  };
 
   const filteredUsers = users.filter(u => 
     u.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -81,6 +98,43 @@ export function AdminUsers() {
     } else {
       toast.success(newStatus === 'vip' ? 'Đã nâng cấp VIP' : 'Đã hủy VIP');
       fetchUsers();
+    }
+  };
+
+  const toggleManager = async (user: Profile) => {
+    const currentRole = getUserRole(user.user_id);
+    
+    if (currentRole === 'admin') {
+      toast.error('Không thể thay đổi quyền của Admin');
+      return;
+    }
+
+    if (currentRole === 'manager') {
+      // Remove manager role
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', user.user_id)
+        .eq('role', 'manager');
+      
+      if (error) {
+        toast.error('Lỗi hạ quyền quản lí');
+      } else {
+        toast.success('Đã hạ quyền thành thành viên thường');
+        fetchUsers();
+      }
+    } else {
+      // Add manager role
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: user.user_id, role: 'manager' });
+      
+      if (error) {
+        toast.error('Lỗi cấp quyền quản lí');
+      } else {
+        toast.success('Đã cấp quyền quản lí');
+        fetchUsers();
+      }
     }
   };
 
@@ -145,72 +199,101 @@ export function AdminUsers() {
       <p className="text-sm text-muted-foreground">{filteredUsers.length} thành viên</p>
 
       <div className="space-y-2">
-        {filteredUsers.map((user) => (
-          <Card key={user.id}>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground shrink-0">#{user.display_id}</span>
-                    <p className="text-xs font-medium truncate">{user.username || 'No name'}</p>
-                    {user.membership_status === 'vip' && (
-                      <Badge variant="secondary" className="h-4 text-[10px] bg-yellow-500/20 text-yellow-600">
-                        VIP
-                      </Badge>
-                    )}
-                    {user.is_banned && (
-                      <Badge variant="destructive" className="h-4 text-[10px]">
-                        Banned
-                      </Badge>
-                    )}
+        {filteredUsers.map((user) => {
+          const role = getUserRole(user.user_id);
+          return (
+            <Card key={user.id}>
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground shrink-0">#{user.display_id}</span>
+                      <p className="text-xs font-medium truncate">{user.username || 'No name'}</p>
+                      {role === 'admin' && (
+                        <Badge variant="default" className="h-4 text-[10px] bg-red-500">
+                          Admin
+                        </Badge>
+                      )}
+                      {role === 'manager' && (
+                        <Badge variant="default" className="h-4 text-[10px] bg-blue-500">
+                          Quản lí
+                        </Badge>
+                      )}
+                      {user.membership_status === 'vip' && (
+                        <Badge variant="secondary" className="h-4 text-[10px] bg-yellow-500/20 text-yellow-600">
+                          VIP
+                        </Badge>
+                      )}
+                      {user.is_banned && (
+                        <Badge variant="destructive" className="h-4 text-[10px]">
+                          Banned
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Số dư: {user.balance.toLocaleString()}đ
+                    </p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Số dư: {user.balance.toLocaleString()}đ
-                  </p>
+                  
+                  <div className="flex gap-1 shrink-0">
+                    {/* Manager toggle - only visible to admin and not for admin users */}
+                    {isAdmin && role !== 'admin' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => toggleManager(user)}
+                        title={role === 'manager' ? 'Hạ quyền thành thành viên' : 'Cấp quyền quản lí'}
+                      >
+                        {role === 'manager' ? (
+                          <ShieldOff className="h-3 w-3 text-blue-500" />
+                        ) : (
+                          <Shield className="h-3 w-3" />
+                        )}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => toggleVip(user)}
+                      title={user.membership_status === 'vip' ? 'Hủy VIP' : 'Nâng cấp VIP'}
+                    >
+                      <Crown className={`h-3 w-3 ${user.membership_status === 'vip' ? 'text-yellow-500' : ''}`} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => openBalanceDialog(user)}
+                      title="Cộng tiền"
+                    >
+                      <DollarSign className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => openPasswordDialog(user)}
+                      title="Đổi mật khẩu"
+                    >
+                      <Key className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-7 w-7 p-0 ${user.is_banned ? 'text-green-500' : 'text-destructive'}`}
+                      onClick={() => toggleBan(user)}
+                      title={user.is_banned ? 'Mở khóa' : 'Khóa'}
+                    >
+                      {user.is_banned ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
+                    </Button>
+                  </div>
                 </div>
-                
-                <div className="flex gap-1 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => toggleVip(user)}
-                    title={user.membership_status === 'vip' ? 'Hủy VIP' : 'Nâng cấp VIP'}
-                  >
-                    <Crown className={`h-3 w-3 ${user.membership_status === 'vip' ? 'text-yellow-500' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => openBalanceDialog(user)}
-                    title="Cộng tiền"
-                  >
-                    <DollarSign className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => openPasswordDialog(user)}
-                    title="Đổi mật khẩu"
-                  >
-                    <Key className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`h-7 w-7 p-0 ${user.is_banned ? 'text-green-500' : 'text-destructive'}`}
-                    onClick={() => toggleBan(user)}
-                    title={user.is_banned ? 'Mở khóa' : 'Khóa'}
-                  >
-                    {user.is_banned ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Balance Dialog */}
