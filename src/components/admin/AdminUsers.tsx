@@ -270,24 +270,30 @@ export function AdminUsers({ isAdmin }: AdminUsersProps) {
                     >
                       <DollarSign className="h-3 w-3" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => openPasswordDialog(user)}
-                      title="Đổi mật khẩu"
-                    >
-                      <Key className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-7 w-7 p-0 ${user.is_banned ? 'text-green-500' : 'text-destructive'}`}
-                      onClick={() => toggleBan(user)}
-                      title={user.is_banned ? 'Mở khóa' : 'Khóa'}
-                    >
-                      {user.is_banned ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
-                    </Button>
+                    {/* Password button - only visible to admin OR for non-admin users if current user is manager */}
+                    {(isAdmin || role !== 'admin') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => openPasswordDialog(user)}
+                        title="Đổi mật khẩu"
+                      >
+                        <Key className="h-3 w-3" />
+                      </Button>
+                    )}
+                    {/* Ban button - only visible to admin OR for non-admin users if current user is manager */}
+                    {(isAdmin || role !== 'admin') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-7 w-7 p-0 ${user.is_banned ? 'text-green-500' : 'text-destructive'}`}
+                        onClick={() => toggleBan(user)}
+                        title={user.is_banned ? 'Mở khóa' : 'Khóa'}
+                      >
+                        {user.is_banned ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

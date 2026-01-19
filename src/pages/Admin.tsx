@@ -55,7 +55,7 @@ export default function AdminPage() {
 
       <div className="p-4">
         <Tabs defaultValue="videos" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8 h-9">
+          <TabsList className={`grid w-full h-9 ${isAdmin ? 'grid-cols-8' : 'grid-cols-7'}`}>
             <TabsTrigger value="videos" className="text-xs gap-1">
               <Video className="h-3 w-3" />
               <span className="hidden sm:inline">Video</span>
@@ -84,10 +84,12 @@ export default function AdminPage() {
               <Database className="h-3 w-3" />
               <span className="hidden sm:inline">Backup</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs gap-1">
-              <Settings className="h-3 w-3" />
-              <span className="hidden sm:inline">Cài đặt</span>
-            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="settings" className="text-xs gap-1">
+                <Settings className="h-3 w-3" />
+                <span className="hidden sm:inline">Cài đặt</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="videos">
@@ -118,9 +120,11 @@ export default function AdminPage() {
             <AdminBackup isAdmin={isAdmin} />
           </TabsContent>
 
-          <TabsContent value="settings">
-            <AdminSettings />
-          </TabsContent>
+          {isAdmin && (
+            <TabsContent value="settings">
+              <AdminSettings />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
