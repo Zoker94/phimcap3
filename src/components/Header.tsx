@@ -17,8 +17,10 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, isManager, signOut } = useAuth();
   const navigate = useNavigate();
+  
+  const hasAdminAccess = isAdmin || isManager;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +111,7 @@ export function Header() {
                   Upload video
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {isAdmin && (
+                {hasAdminAccess && (
                   <>
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       <Shield className="h-4 w-4 mr-2" />
