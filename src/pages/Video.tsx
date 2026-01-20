@@ -116,10 +116,12 @@ export default function VideoPage() {
     profile?.vip_expires_at && 
     new Date(profile.vip_expires_at) > new Date();
 
-  // Check if this is a Bunny Stream embed URL or a storage URL
+  // Check if this is a Bunny Stream embed URL, iframe embed, or a storage URL
   const isBunnyStream = video?.video_url?.includes('iframe.mediadelivery.net') || 
                         video?.video_url?.includes('video.bunnycdn.com');
   
+  // Check if video type is iframe (external embed)
+  const isIframeEmbed = video?.video_type === 'iframe';
   // For Bunny Storage URLs (*.b-cdn.net), convert to direct storage access
   const getStorageUrl = (url: string) => {
     try {
@@ -220,7 +222,18 @@ export default function VideoPage() {
 
         {/* Video Player */}
         <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
-          {isBunnyStream ? (
+          {isIframeEmbed ? (
+            // External iframe embed (from paste code)
+            <iframe
+              src={video.video_url}
+              className="w-full h-full border-0"
+              allowFullScreen
+              loading="lazy"
+              scrolling="no"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              style={{ border: 'none' }}
+            />
+          ) : isBunnyStream ? (
             <iframe
               src={bunnyEmbedUrl}
               className="w-full h-full border-0"
@@ -238,8 +251,8 @@ export default function VideoPage() {
             />
           )}
           
-          {/* Quality indicator for non-VIP users */}
-          {!isVip && (
+          {/* Quality indicator for non-VIP users - only for bunny stream */}
+          {!isVip && isBunnyStream && !isIframeEmbed && (
             <div className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded flex items-center gap-1">
               <span>720p</span>
               <Link to={user ? "/vip" : "/login"} className="text-yellow-400 hover:underline ml-1">

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit, ExternalLink, X, Tag, CheckCircle, XCircle, Clock, Filter, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Edit, ExternalLink, X, Tag, CheckCircle, XCircle, Clock, Filter, Eye, EyeOff, Code } from 'lucide-react';
 
 interface Video {
   id: string;
@@ -64,7 +64,23 @@ export function AdminVideos() {
   const [duration, setDuration] = useState('');
   const [selectedTags, setSelectedTags] = useState<TagItem[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [embedCode, setEmbedCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Parse iframe embed code to extract src URL
+  const parseEmbedCode = (code: string): string | null => {
+    const srcMatch = code.match(/src=["']([^"']+)["']/i);
+    return srcMatch ? srcMatch[1] : null;
+  };
+
+  // Handle embed code change
+  const handleEmbedCodeChange = (code: string) => {
+    setEmbedCode(code);
+    const extractedUrl = parseEmbedCode(code);
+    if (extractedUrl) {
+      setVideoUrl(extractedUrl);
+    }
+  };
 
   const fetchData = async () => {
     const [videosRes, catsRes, tagsRes] = await Promise.all([
@@ -96,6 +112,7 @@ export function AdminVideos() {
     setDuration('');
     setSelectedTags([]);
     setTagInput('');
+    setEmbedCode('');
     setEditingVideo(null);
   };
 
@@ -394,22 +411,52 @@ export function AdminVideos() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bunny">Bunny.net (Embed)</SelectItem>
+                    <SelectItem value="iframe">Mã nhúng iframe</SelectItem>
                     <SelectItem value="upload">Direct URL</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs">
-                  {videoType === 'bunny' ? 'Bunny.net Embed URL *' : 'Video URL *'}
-                </Label>
-                <Input
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder={videoType === 'bunny' ? 'https://iframe.mediadelivery.net/embed/...' : 'https://...'}
-                  required
-                  className="h-8 text-sm"
-                />
-              </div>
+
+              {/* Embed Code Input for iframe type */}
+              {videoType === 'iframe' && (
+                <div className="space-y-2">
+                  <Label className="text-xs flex items-center gap-1">
+                    <Code className="h-3 w-3" />
+                    Mã nhúng iframe *
+                  </Label>
+                  <Textarea
+                    value={embedCode}
+                    onChange={(e) => handleEmbedCodeChange(e.target.value)}
+                    placeholder='<iframe src="https://..." frameborder="0" width="510" height="400" scrolling="no" allowfullscreen></iframe>'
+                    rows={3}
+                    className="text-sm font-mono text-[11px]"
+                  />
+                  {videoUrl && embedCode && (
+                    <p className="text-[10px] text-green-600">
+                      ✓ Đã trích xuất URL: {videoUrl.substring(0, 50)}...
+                    </p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground">
+                    Dán mã nhúng iframe, hệ thống sẽ tự động trích xuất URL video
+                  </p>
+                </div>
+              )}
+
+              {/* URL Input for non-iframe types */}
+              {videoType !== 'iframe' && (
+                <div className="space-y-2">
+                  <Label className="text-xs">
+                    {videoType === 'bunny' ? 'Bunny.net Embed URL *' : 'Video URL *'}
+                  </Label>
+                  <Input
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder={videoType === 'bunny' ? 'https://iframe.mediadelivery.net/embed/...' : 'https://...'}
+                    required
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label className="text-xs">Danh mục</Label>
                 <Select value={categoryId} onValueChange={setCategoryId}>
