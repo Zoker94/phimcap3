@@ -9,8 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit, ExternalLink, X, Tag, CheckCircle, XCircle, Clock, Filter, Eye, EyeOff, Code } from 'lucide-react';
+import { Plus, Trash2, Edit, ExternalLink, X, Tag, CheckCircle, XCircle, Clock, Filter, Eye, EyeOff, Code, Globe } from 'lucide-react';
+import { AdminAutoLeech } from './AdminAutoLeech';
 
 interface Video {
   id: string;
@@ -339,7 +341,21 @@ export function AdminVideos() {
   }
 
   return (
-    <div className="space-y-4">
+    <Tabs defaultValue="list" className="space-y-4">
+      <TabsList className="grid grid-cols-2 w-[240px]">
+        <TabsTrigger value="list" className="text-xs">Danh sách video</TabsTrigger>
+        <TabsTrigger value="leech" className="text-xs">
+          <Globe className="h-3 w-3 mr-1" />
+          Auto Leech
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="leech" className="mt-4">
+        <AdminAutoLeech categories={categories} onVideosAdded={fetchData} />
+      </TabsContent>
+
+      <TabsContent value="list" className="mt-4">
+      <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">{filteredVideos.length} video</p>
@@ -633,5 +649,7 @@ export function AdminVideos() {
         ))}
       </div>
     </div>
+      </TabsContent>
+    </Tabs>
   );
 }
