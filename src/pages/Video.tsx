@@ -8,7 +8,8 @@ import { VideoComments } from '@/components/VideoComments';
 import { AdvertisementBanner } from '@/components/AdvertisementBanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Eye, Calendar, ArrowLeft, Tag } from 'lucide-react';
+import { Crown, Eye, Calendar, ArrowLeft, Tag, Code, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Video {
   id: string;
@@ -51,6 +52,18 @@ export default function VideoPage() {
   const [relatedVideos, setRelatedVideos] = useState<RelatedVideo[]>([]);
   const [videoTags, setVideoTags] = useState<TagItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Generate embed code
+  const embedCode = video ? `<iframe src="https://phimcap3.lovable.app/embedframe/${video.id}" frameborder="0" width="510" height="400" scrolling="no" allowfullscreen></iframe>` : '';
+
+  const copyEmbedCode = () => {
+    navigator.clipboard.writeText(embedCode);
+    setCopied(true);
+    toast.success('Đã sao chép mã nhúng');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -278,6 +291,39 @@ export default function VideoPage() {
               ))}
             </div>
           )}
+
+          {/* Embed Code Section */}
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEmbed(!showEmbed)}
+              className="text-xs gap-1"
+            >
+              <Code className="h-3 w-3" />
+              Mã nhúng
+            </Button>
+            
+            {showEmbed && (
+              <div className="mt-2 p-3 bg-muted rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium">Sao chép mã nhúng:</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyEmbedCode}
+                    className="h-7 text-xs gap-1"
+                  >
+                    {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                    {copied ? 'Đã sao chép' : 'Sao chép'}
+                  </Button>
+                </div>
+                <code className="block text-[10px] bg-background p-2 rounded border break-all">
+                  {embedCode}
+                </code>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Comments Section */}
