@@ -30,43 +30,109 @@ export const firecrawlApi = {
 export function extractVideoUrls(html: string): { iframeUrls: string[]; directUrls: string[] } {
   const iframeUrls: string[] = [];
   const directUrls: string[] = [];
+  const seenUrls = new Set<string>();
 
-  // Extract iframe src URLs
+  const addUrl = (url: string, type: 'iframe' | 'direct') => {
+    // Clean and normalize URL
+    let cleanUrl = url.trim();
+    if (cleanUrl.startsWith('//')) {
+      cleanUrl = 'https:' + cleanUrl;
+    }
+    if (!cleanUrl.startsWith('http')) return;
+    if (seenUrls.has(cleanUrl)) return;
+    seenUrls.add(cleanUrl);
+    
+    if (type === 'iframe') {
+      iframeUrls.push(cleanUrl);
+    } else {
+      directUrls.push(cleanUrl);
+    }
+  };
+
+  // 1. Extract iframe src URLs
   const iframeRegex = /<iframe[^>]*src=["']([^"']+)["'][^>]*>/gi;
   let match;
   while ((match = iframeRegex.exec(html)) !== null) {
-    const url = match[1];
-    if (isVideoUrl(url)) {
-      iframeUrls.push(url);
+    if (isVideoUrl(match[1])) {
+      addUrl(match[1], 'iframe');
     }
   }
 
-  // Extract video source URLs
+  // 2. Extract video/source tag URLs
   const videoSrcRegex = /<(?:video|source)[^>]*src=["']([^"']+)["'][^>]*>/gi;
   while ((match = videoSrcRegex.exec(html)) !== null) {
-    const url = match[1];
-    if (isVideoUrl(url)) {
-      directUrls.push(url);
+    addUrl(match[1], 'direct');
+  }
+
+  // 3. Extract from data attributes (data-src, data-video-src, etc.)
+  const dataAttrRegex = /data-(?:src|video|stream|file|url|source)=["']([^"']+)["']/gi;
+  while ((match = dataAttrRegex.exec(html)) !== null) {
+    if (isVideoFileUrl(match[1])) {
+      addUrl(match[1], 'direct');
     }
   }
 
-  // Extract embed URLs from common video hosts
+  // 4. Extract HLS/M3U8 streams from JavaScript
+  const hlsPatterns = [
+    /["']([^"']*\.m3u8[^"']*)["']/gi,
+    /source\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']/gi,
+    /file\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']/gi,
+    /src\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']/gi,
+  ];
+  for (const pattern of hlsPatterns) {
+    while ((match = pattern.exec(html)) !== null) {
+      addUrl(match[1], 'direct');
+    }
+  }
+
+  // 5. Extract MP4 URLs from JavaScript
+  const mp4Patterns = [
+    /["']([^"']*\.mp4[^"']*)["']/gi,
+    /["']([^"']*\.webm[^"']*)["']/gi,
+    /source\s*[:=]\s*["']([^"']+\.mp4[^"']*)["']/gi,
+    /file\s*[:=]\s*["']([^"']+\.mp4[^"']*)["']/gi,
+  ];
+  for (const pattern of mp4Patterns) {
+    while ((match = pattern.exec(html)) !== null) {
+      const url = match[1];
+      // Filter out obvious non-video files
+      if (!url.includes('poster') && !url.includes('thumb') && !url.includes('preview')) {
+        addUrl(url, 'direct');
+      }
+    }
+  }
+
+  // 6. Extract embed URLs from common video hosts and CDNs
   const embedPatterns = [
-    /(?:https?:)?\/\/(?:www\.)?(?:youtube\.com\/embed\/|player\.vimeo\.com\/video\/|dailymotion\.com\/embed\/|ok\.ru\/videoembed\/|vk\.com\/video_ext\.php|streamable\.com\/[oe]\/|pornhub\.com\/embed\/|xvideos\.com\/embedframe\/|xnxx\.com\/embedframe\/)[^\s"'<>]+/gi,
-    /(?:https?:)?\/\/[^\s"'<>]*(?:\.mp4|\.m3u8|\.webm|\.ogg)[^\s"'<>]*/gi,
-    /(?:https?:)?\/\/(?:iframe\.mediadelivery\.net|video-[a-z0-9]+\.xx\.fbcdn\.net|[a-z0-9-]+\.googlevideo\.com)[^\s"'<>]+/gi,
+    // Popular video platforms
+    /(?:https?:)?\/\/(?:www\.)?(?:youtube\.com\/embed\/|player\.vimeo\.com\/video\/|dailymotion\.com\/embed\/)[^\s"'<>]+/gi,
+    // Social video embeds
+    /(?:https?:)?\/\/(?:www\.)?(?:ok\.ru\/videoembed\/|vk\.com\/video_ext\.php)[^\s"'<>]+/gi,
+    // Video CDNs
+    /(?:https?:)?\/\/(?:iframe\.mediadelivery\.net|[a-z0-9-]+\.bunnycdn\.ru|[a-z0-9-]+\.b-cdn\.net)[^\s"'<>]+/gi,
+    // Google/Facebook video
+    /(?:https?:)?\/\/(?:video-[a-z0-9]+\.xx\.fbcdn\.net|[a-z0-9-]+\.googlevideo\.com)[^\s"'<>]+/gi,
+    // Generic stream/player URLs
+    /(?:https?:)?\/\/[^\s"'<>]*(?:\/stream\/|\/player\/|\/video\/|\/embed\/)[^\s"'<>]+/gi,
   ];
 
   for (const pattern of embedPatterns) {
     while ((match = pattern.exec(html)) !== null) {
-      const url = match[0].startsWith('//') ? 'https:' + match[0] : match[0];
-      if (!iframeUrls.includes(url) && !directUrls.includes(url)) {
-        if (url.includes('.mp4') || url.includes('.m3u8') || url.includes('.webm')) {
-          directUrls.push(url);
-        } else {
-          iframeUrls.push(url);
-        }
+      const url = match[0];
+      if (isVideoFileUrl(url)) {
+        addUrl(url, 'direct');
+      } else {
+        addUrl(url, 'iframe');
       }
+    }
+  }
+
+  // 7. Extract from JSON data in scripts
+  const jsonVideoRegex = /"(?:video_url|videoUrl|src|file|source|stream|hls|mp4)":\s*"([^"]+)"/gi;
+  while ((match = jsonVideoRegex.exec(html)) !== null) {
+    const url = match[1].replace(/\\/g, '');
+    if (isVideoFileUrl(url) || isVideoUrl(url)) {
+      addUrl(url, isVideoFileUrl(url) ? 'direct' : 'iframe');
     }
   }
 
@@ -80,14 +146,21 @@ function isVideoUrl(url: string): boolean {
     /dailymotion\.com/i,
     /player\./i,
     /embed/i,
-    /video/i,
-    /\.mp4|\.m3u8|\.webm|\.ogg/i,
+    /\/video\//i,
+    /\.mp4|\.m3u8|\.webm|\.ogg|\.flv/i,
     /mediadelivery\.net/i,
     /streamable\.com/i,
     /ok\.ru/i,
     /vk\.com/i,
+    /bunnycdn/i,
+    /b-cdn\.net/i,
+    /stream/i,
   ];
   return videoPatterns.some(pattern => pattern.test(url));
+}
+
+function isVideoFileUrl(url: string): boolean {
+  return /\.(mp4|m3u8|webm|ogg|flv|avi|mov|mkv)/i.test(url);
 }
 
 // Extract thumbnail from HTML
